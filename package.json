@@ -1,0 +1,35 @@
+{
+  "name": "teams-leave-request-bot",
+  "version": "1.0.0",
+  "description": "Microsoft Teams Bot for leave request management with DevRev integration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:devrev": "node test/test-devrev.js",
+    "setup": "bash dev-start.sh"
+  },
+  "keywords": [
+    "teams",
+    "bot",
+    "microsoft",
+    "devrev",
+    "leave-request"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "botbuilder": "^4.20.0",
+    "restify": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "adaptivecards": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

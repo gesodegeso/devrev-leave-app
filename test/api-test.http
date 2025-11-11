@@ -1,0 +1,109 @@
+###
+# REST Client for VSCode テストファイル
+#
+# 使用方法:
+#   1. VSCodeに "REST Client" 拡張機能をインストール
+#   2. このファイルを開く
+#   3. リクエストの上に表示される "Send Request" をクリック
+#
+# または Thunder Client 拡張機能を使用することもできます
+###
+
+### Variables (環境に応じて変更)
+@botUrl = http://localhost:3978
+@devrevApiUrl = https://api.devrev.ai
+@devrevToken = YOUR_DEVREV_API_TOKEN_HERE
+@devrevPartId = YOUR_PART_ID_HERE
+
+###############################################################################
+# Bot API Tests
+###############################################################################
+
+### 1. ヘルスチェック
+GET {{botUrl}}/health
+Content-Type: application/json
+
+###############################################################################
+# DevRev API Tests
+###############################################################################
+
+### 2. DevRev - 自分のユーザー情報を取得
+GET {{devrevApiUrl}}/internal/dev-users.self
+Authorization: Bearer {{devrevToken}}
+Content-Type: application/json
+
+### 3. DevRev - テストチケット作成
+POST {{devrevApiUrl}}/internal/tickets.create
+Authorization: Bearer {{devrevToken}}
+Content-Type: application/json
+
+{
+  "type": "ticket",
+  "title": "REST Client Test Ticket",
+  "body": "# テストチケット\n\nREST Clientからのテストです。",
+  "applies_to_part": "{{devrevPartId}}",
+  "tags": [
+    { "name": "test" },
+    { "name": "rest-client" }
+  ]
+}
+
+### 4. DevRev - Parts一覧を取得
+GET {{devrevApiUrl}}/internal/parts.list
+Authorization: Bearer {{devrevToken}}
+Content-Type: application/json
+
+### 5. DevRev - チケット一覧を取得（最新10件）
+POST {{devrevApiUrl}}/internal/tickets.list
+Authorization: Bearer {{devrevToken}}
+Content-Type: application/json
+
+{
+  "limit": 10
+}
+
+### 6. DevRev - 特定のチケットを取得
+# チケットIDを実際の値に置き換えてください
+@ticketId = don:core:dvrv-us-1:devo/xxx:ticket/123
+GET {{devrevApiUrl}}/internal/tickets.get?id={{ticketId}}
+Authorization: Bearer {{devrevToken}}
+Content-Type: application/json
+
+###############################################################################
+# Bot Framework Emulator用（ローカルテスト）
+###############################################################################
+
+### 7. Bot - メッセージ送信テスト（直接Botにメッセージ送信）
+# 注意: これは通常Bot Framework Emulatorを使用してテストします
+# https://github.com/microsoft/BotFramework-Emulator
+POST {{botUrl}}/api/messages
+Content-Type: application/json
+
+{
+  "type": "message",
+  "id": "test-message-1",
+  "timestamp": "2025-01-10T12:00:00.000Z",
+  "channelId": "emulator",
+  "from": {
+    "id": "test-user",
+    "name": "Test User"
+  },
+  "conversation": {
+    "id": "test-conversation"
+  },
+  "recipient": {
+    "id": "bot",
+    "name": "Bot"
+  },
+  "text": "休暇申請",
+  "locale": "ja-JP"
+}
+
+###############################################################################
+# ngrok Status Check
+###############################################################################
+
+### 8. ngrok Web Interface - トンネル状態確認
+# ngrok起動後にアクセス可能
+GET http://localhost:4040/api/tunnels
+Content-Type: application/json

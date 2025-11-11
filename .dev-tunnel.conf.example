@@ -1,0 +1,24 @@
+# 開発用SSHトンネル設定ファイル
+# このファイルをコピーして .dev-tunnel.conf として使用してください
+# cp .dev-tunnel.conf.example .dev-tunnel.conf
+
+# リモートサーバーの設定
+# 例: user@example.com または SSH config の Host名
+SERVER="user@your-server.com"
+
+# ポート設定
+LOCAL_PORT=3978   # ローカルのBotポート
+REMOTE_PORT=3978  # リモートサーバーで待ち受けるポート
+
+# オプション: SSH設定
+# ~/.ssh/config に以下を追加することを推奨:
+#
+# Host devserver
+#     HostName your-server.com
+#     User your-username
+#     Port 22
+#     IdentityFile ~/.ssh/id_rsa
+#     ServerAliveInterval 60
+#     ServerAliveCountMax 3
+#
+# その後、SERVER="devserver" と設定できます

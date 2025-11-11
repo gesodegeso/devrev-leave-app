@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "2d16b493-28ad-4456-87ae-f697fa2d7364",
+  "packageName": "com.synthesy.leaverequest",
+  "developer": {
+    "name": "SYNTHESY",
+    "websiteUrl": "https://synthesy.co.jp",
+    "privacyUrl": "https://synthesy.co.jp/privacy",
+    "termsOfUseUrl": "https://synthesy.co.jp/terms"
+  },
+  "name": {
+    "short": "休暇申請Bot",
+    "full": "休暇申請管理Bot with DevRev"
+  },
+  "description": {
+    "short": "休暇申請を簡単に管理",
+    "full": "Microsoft Teams上で休暇申請を行い、DevRevに自動的にチケットを作成します。承認者への通知も自動的に行われます。"
+  },
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+  "accentColor": "#FFFFFF",
+  "bots": [
+    {
+      "botId": "2d16b493-28ad-4456-87ae-f697fa2d7364",
+      "scopes": ["personal", "team", "groupchat"],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": ["personal", "team", "groupchat"],
+          "commands": [
+            {
+              "title": "休暇申請",
+              "description": "休暇申請フォームを表示します"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["devcp.ikakunn.com", "api.devrev.ai"]
+}

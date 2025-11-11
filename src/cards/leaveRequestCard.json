@@ -1,0 +1,100 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.4",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "休暇申請フォーム",
+      "weight": "bolder",
+      "size": "large",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "以下の項目を入力して、休暇申請を送信してください。",
+      "wrap": true,
+      "spacing": "small"
+    },
+    {
+      "type": "TextBlock",
+      "text": "休暇開始日",
+      "weight": "bolder",
+      "wrap": true,
+      "spacing": "medium"
+    },
+    {
+      "type": "Input.Date",
+      "id": "startDate",
+      "placeholder": "開始日を選択してください"
+    },
+    {
+      "type": "TextBlock",
+      "text": "休暇終了日",
+      "weight": "bolder",
+      "wrap": true,
+      "spacing": "medium"
+    },
+    {
+      "type": "Input.Date",
+      "id": "endDate",
+      "placeholder": "終了日を選択してください"
+    },
+    {
+      "type": "TextBlock",
+      "text": "休暇理由",
+      "weight": "bolder",
+      "wrap": true,
+      "spacing": "medium"
+    },
+    {
+      "type": "Input.Text",
+      "id": "reason",
+      "placeholder": "休暇の理由を入力してください",
+      "isMultiline": true,
+      "maxLength": 500
+    },
+    {
+      "type": "TextBlock",
+      "text": "有給休暇を利用しますか？",
+      "weight": "bolder",
+      "wrap": true,
+      "spacing": "medium"
+    },
+    {
+      "type": "Input.ChoiceSet",
+      "id": "usePaidLeave",
+      "style": "compact",
+      "value": "true",
+      "choices": [
+        {
+          "title": "はい",
+          "value": "true"
+        },
+        {
+          "title": "いいえ",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "承認者の名前",
+      "weight": "bolder",
+      "wrap": true,
+      "spacing": "medium"
+    },
+    {
+      "type": "Input.Text",
+      "id": "approver",
+      "placeholder": "承認者の名前を入力してください"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "申請を送信",
+      "style": "positive"
+    }
+  ]
+}
