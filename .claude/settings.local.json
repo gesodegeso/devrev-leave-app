@@ -2,7 +2,21 @@
   "permissions": {
     "allow": [
       "Bash(chmod:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node src/index.js:*)",
+      "Bash(node --version:*)",
+      "Bash(if [ -s \"$HOME/.nvm/nvm.sh\" ])",
+      "Bash(then . \"$HOME/.nvm/nvm.sh\")",
+      "Bash(nvm --version)",
+      "Bash(else echo \"NVM not installed\")",
+      "Bash(fi)",
+      "Bash(. \"$HOME/.nvm/nvm.sh\")",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
