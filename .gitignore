@@ -44,6 +44,10 @@ coverage
 # SSH tunnel configuration
 .dev-tunnel.conf
 
+# JWT tokens (for testing)
+test/.jwt-token
+.jwt-token
+
 # OS files
 .DS_Store
 Thumbs.db
