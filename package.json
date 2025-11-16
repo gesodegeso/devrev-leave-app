@@ -8,6 +8,7 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:devrev": "node test/test-devrev.js",
+    "test:jwt": "node test/get-jwt-token.js",
     "setup": "bash dev-start.sh"
   },
   "keywords": [

@@ -16,7 +16,14 @@
       "Bash(nvm use:*)",
       "Bash(npm install:*)",
       "Bash(cat:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(node -e:*)",
+      "Bash(node test/check-env.js:*)",
+      "Bash(curl:*)",
+      "Bash(npm run test:jwt:*)",
+      "Bash(node test/get-jwt-token.js:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

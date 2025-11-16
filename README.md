@@ -54,6 +54,13 @@ devrev-leav-app/
 - **[その他のBot登録方法](AZURE_BOT_SETUP.md)** - シングルテナント、マネージドIDなど
 - **[ローカル開発環境](LOCAL_DEVELOPMENT.md)** - ローカルでのデバッグ方法
 - **[プロジェクト構造](PROJECT_STRUCTURE.md)** - 詳細なコード構造
+- **[CloudAdapter移行ガイド](docs/CLOUDADAPTER_MIGRATION.md)** - 最新のBot Framework適用
+
+### トラブルシューティング
+
+- **[401認証エラー (本番環境)](docs/PRODUCTION_401_ERROR.md)** - 本番環境での認証エラー対処法
+- **[認証エラー全般](docs/TROUBLESHOOTING_AUTH.md)** - 認証関連のトラブルシューティング
+- **[JWTトークン取得ガイド](docs/JWT_TOKEN_GUIDE.md)** - トークン取得とテスト方法
 
 ---
 

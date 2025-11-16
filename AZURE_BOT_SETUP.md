@@ -73,11 +73,16 @@ Azure Portal → リソースの作成 → Azure Bot
 `src/index.js` を以下のように修正:
 
 ```javascript
-const { BotFrameworkAdapter, MicrosoftAppCredentials } = require('botbuilder');
+const {
+  CloudAdapter,
+  ConfigurationBotFrameworkAuthentication,
+  ConfigurationServiceClientCredentialFactory,
+} = require('botbuilder');
 
 // マネージドID使用時
-const adapter = new BotFrameworkAdapter({
-    appId: process.env.MICROSOFT_APP_ID,
+const credentialsFactory = new ConfigurationServiceClientCredentialFactory({
+    MicrosoftAppId: process.env.MICROSOFT_APP_ID,
+    MicrosoftAppType: 'UserAssignedMSI', // マネージドIDの場合
     // appPassword は不要
     // Azure内でホストする場合、マネージドIDが自動的に使用される
 });
