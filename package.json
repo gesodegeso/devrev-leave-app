@@ -8,8 +8,10 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:devrev": "node test/test-devrev.js",
+    "test:devrev:custom": "node test/test-devrev-custom-object.js",
     "test:jwt": "node test/get-jwt-token.js",
-    "setup": "bash dev-start.sh"
+    "setup": "bash dev-start.sh",
+    "devrev:setup-schema": "bash scripts/setup-devrev-schema.sh"
   },
   "keywords": [
     "teams",

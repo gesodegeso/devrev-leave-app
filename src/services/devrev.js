@@ -12,10 +12,10 @@ class DevRevService {
     }
 
     /**
-     * Create a leave request ticket in DevRev
+     * Create a leave request as a custom object in DevRev
      * @param {Object} leaveData - Leave request data from adaptive card
      * @param {Object} requester - Teams user who submitted the request
-     * @returns {Promise<{success: boolean, ticketId?: string, error?: string}>}
+     * @returns {Promise<{success: boolean, objectId?: string, displayId?: string, error?: string}>}
      */
     async createLeaveRequestTicket(leaveData, requester) {
         try {
@@ -37,50 +37,37 @@ class DevRevService {
             const end = new Date(endDate);
             const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-            // Create ticket title
-            const title = `休暇申請: ${requester.name} (${startDate} ~ ${endDate})`;
+            // Determine leave type (paid/unpaid)
+            const leaveType = usePaidLeave === 'true' ? 'paid' : 'unpaid';
 
-            // Create detailed description
-            const description = this.buildTicketDescription({
-                requesterName: requester.name,
-                requesterEmail: requester.email || requester.aadObjectId,
-                requesterTeamsId: requester.id,
-                startDate,
-                endDate,
-                days,
-                reason,
-                usePaidLeave: usePaidLeave === 'true',
-                approver,
-                approverUserId
-            });
-
-            // Prepare DevRev API request
-            const ticketData = {
-                type: 'ticket',
-                title: title,
-                body: description,
-                applies_to_part: this.defaultPartId,
-                owned_by: [], // Can be set to specific DevRev users if mapped
-                tags: [
-                    { name: 'leave-request' },
-                    { name: usePaidLeave === 'true' ? 'paid-leave' : 'unpaid-leave' }
-                ]
+            // Prepare custom object data
+            const customObjectData = {
+                leaf_type: 'leave_request', // カスタムオブジェクトのリーフタイプ
+                custom_schema_spec: {
+                    tenant_fragment: true
+                },
+                custom_fields: {
+                    tnt__requester_name: requester.name,
+                    tnt__requester_email: requester.email || requester.aadObjectId || '',
+                    tnt__requester_teams_id: requester.id,
+                    tnt__start_date: startDate,
+                    tnt__end_date: endDate,
+                    tnt__days_count: days,
+                    tnt__reason: reason,
+                    tnt__approver_name: approver || '',
+                    tnt__approver_teams_id: approverUserId || '',
+                    tnt__status: 'pending', // 初期ステータス
+                    tnt__leave_type: leaveType, // 'paid' or 'unpaid'
+                    tnt__additional_system: '' // AIが自動判別して追記するフィールド（初期値は空）
+                }
             };
 
-            // Add approver information if available
-            if (approverUserId) {
-                ticketData.custom_fields = {
-                    approver_teams_id: approverUserId,
-                    approver_name: approver
-                };
-            }
+            console.log('Creating DevRev custom object:', JSON.stringify(customObjectData, null, 2));
 
-            console.log('Creating DevRev ticket:', JSON.stringify(ticketData, null, 2));
-
-            // Make API call to DevRev
+            // Make API call to DevRev (custom objects endpoint)
             const response = await axios.post(
-                `${this.apiBaseUrl}/internal/tickets.create`,
-                ticketData,
+                `${this.apiBaseUrl}/custom-objects.create`,
+                customObjectData,
                 {
                     headers: {
                         'Authorization': `Bearer ${this.apiToken}`,
@@ -91,11 +78,14 @@ class DevRevService {
 
             console.log('DevRev API response:', JSON.stringify(response.data, null, 2));
 
-            if (response.data && response.data.ticket) {
+            // Extract custom object from response
+            if (response.data && response.data.custom_object) {
+                const customObject = response.data.custom_object;
                 return {
                     success: true,
-                    ticketId: response.data.ticket.id,
-                    ticketUrl: `${this.apiBaseUrl}/tickets/${response.data.ticket.id}`
+                    objectId: customObject.id,
+                    displayId: customObject.display_id,
+                    objectUrl: customObject.display_id ? `https://app.devrev.ai/custom/${customObject.display_id}` : null
                 };
             } else {
                 throw new Error('Unexpected response format from DevRev API');
@@ -172,41 +162,46 @@ class DevRevService {
     }
 
     /**
-     * Get ticket by ID (for future use)
+     * Get work item by ID (for future use)
+     * Latest API: works.get
      */
-    async getTicket(ticketId) {
+    async getWork(workId) {
         try {
             const response = await axios.get(
-                `${this.apiBaseUrl}/internal/tickets.get`,
+                `${this.apiBaseUrl}/works.get`,
                 {
                     headers: {
                         'Authorization': `Bearer ${this.apiToken}`,
                         'Content-Type': 'application/json'
                     },
                     params: {
-                        id: ticketId
+                        id: workId
                     }
                 }
             );
 
-            return response.data;
+            return response.data.work;
         } catch (error) {
-            console.error('Error getting DevRev ticket:', error);
+            console.error('Error getting DevRev work:', error);
             throw error;
         }
     }
 
     /**
-     * Update ticket status (for future use)
+     * Update work item (for future use)
+     * Latest API: works.update
      */
-    async updateTicketStatus(ticketId, status) {
+    async updateWork(workId, updates) {
         try {
+            const updateData = {
+                id: workId,
+                type: 'ticket', // Required for works.update
+                ...updates
+            };
+
             const response = await axios.post(
-                `${this.apiBaseUrl}/internal/tickets.update`,
-                {
-                    id: ticketId,
-                    status: status
-                },
+                `${this.apiBaseUrl}/works.update`,
+                updateData,
                 {
                     headers: {
                         'Authorization': `Bearer ${this.apiToken}`,
@@ -215,9 +210,9 @@ class DevRevService {
                 }
             );
 
-            return response.data;
+            return response.data.work;
         } catch (error) {
-            console.error('Error updating DevRev ticket:', error);
+            console.error('Error updating DevRev work:', error);
             throw error;
         }
     }

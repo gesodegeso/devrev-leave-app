@@ -52,7 +52,7 @@ async function testDevRevConnection() {
     log(colors.blue, '1. ユーザー情報取得テスト...');
     try {
         const userResponse = await axios.get(
-            `${apiBaseUrl}/internal/dev-users.self`,
+            `${apiBaseUrl}/dev-users.self`,
             {
                 headers: {
                     'Authorization': `Bearer ${apiToken}`,
@@ -69,7 +69,7 @@ async function testDevRevConnection() {
         log(colors.red, '❌ 接続失敗');
         if (error.response) {
             console.log('   ステータス:', error.response.status);
-            console.log('   エラー:', error.response.data);
+            console.log('   エラー:', JSON.stringify(error.response.data, null, 2));
         } else {
             console.log('   エラー:', error.message);
         }
@@ -96,24 +96,21 @@ async function testDevRevConnection() {
 
     try {
         const now = new Date();
-        const ticketData = {
+        const workData = {
             type: 'ticket',
             title: `[TEST] ローカルテスト - ${now.toISOString()}`,
             body: `# テストチケット\n\nこれはローカル開発環境からのテストです。\n\n- 作成日時: ${now.toLocaleString('ja-JP')}\n- テスト種別: DevRev API接続確認\n\n**このチケットは削除しても構いません。**`,
             applies_to_part: partId,
-            tags: [
-                { name: 'test' },
-                { name: 'local-development' }
-            ]
+            owned_by: [] // Required but can be empty
         };
 
-        log(colors.blue, '   チケットデータ:');
-        console.log(JSON.stringify(ticketData, null, 2));
+        log(colors.blue, '   ワークアイテムデータ:');
+        console.log(JSON.stringify(workData, null, 2));
         console.log();
 
         const response = await axios.post(
-            `${apiBaseUrl}/internal/tickets.create`,
-            ticketData,
+            `${apiBaseUrl}/works.create`,
+            workData,
             {
                 headers: {
                     'Authorization': `Bearer ${apiToken}`,
@@ -122,14 +119,16 @@ async function testDevRevConnection() {
             }
         );
 
-        log(colors.green, '✅ チケット作成成功！');
-        console.log('   チケットID:', response.data.ticket?.id || 'N/A');
-        console.log('   タイトル:', response.data.ticket?.title || 'N/A');
+        log(colors.green, '✅ ワークアイテム作成成功！');
+        const work = response.data.work;
+        console.log('   Work ID:', work?.id || 'N/A');
+        console.log('   Display ID:', work?.display_id || 'N/A');
+        console.log('   タイトル:', work?.title || 'N/A');
         console.log();
 
-        if (response.data.ticket?.id) {
+        if (work?.display_id) {
             log(colors.blue, '   DevRevで確認:');
-            console.log(`   https://app.devrev.ai/tickets/${response.data.ticket.id}`);
+            console.log(`   https://app.devrev.ai/work/${work.display_id}`);
             console.log();
         }
 

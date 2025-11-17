@@ -25,7 +25,11 @@
       "Bash(find:*)",
       "Bash(xargs:*)",
       "Bash(timeout 5 npm run dev)",
-      "Bash(timeout 5 npm start:*)"
+      "Bash(timeout 5 npm start:*)",
+      "Bash(bash:*)",
+      "Bash(npm run test:devrev:custom:*)",
+      "Bash(source .env)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

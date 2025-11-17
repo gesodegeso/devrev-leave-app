@@ -161,12 +161,19 @@ class TeamsLeaveBot extends ActivityHandler {
             );
 
             if (ticketResult.success) {
-                const confirmationMessage = `✅ 休暇申請が完了しました！\n\n` +
-                    `**DevRev Ticket:** ${ticketResult.ticketId}\n` +
+                let confirmationMessage = `✅ 休暇申請が完了しました！\n\n` +
                     `**休暇期間:** ${submittedData.startDate} ~ ${submittedData.endDate}\n` +
                     `**理由:** ${submittedData.reason}\n` +
                     `**有給利用:** ${submittedData.usePaidLeave === 'true' ? 'はい' : 'いいえ'}\n` +
-                    `**承認者:** ${submittedData.approver || '未指定'}`;
+                    `**承認者:** ${submittedData.approver || '未指定'}\n\n`;
+
+                if (ticketResult.displayId) {
+                    confirmationMessage += `**申請ID:** ${ticketResult.displayId}\n`;
+                }
+
+                if (ticketResult.objectUrl) {
+                    confirmationMessage += `**確認リンク:** ${ticketResult.objectUrl}`;
+                }
 
                 await context.sendActivity(confirmationMessage);
             } else {

@@ -60,6 +60,8 @@ devrev-leav-app/
 ### 技術ドキュメント
 - **[CloudAdapter移行ガイド](docs/CLOUDADAPTER_MIGRATION.md)** - 最新のBot Framework適用
 - **[非推奨警告について](docs/DEPRECATION_WARNING_GUIDE.md)** - http_parser警告の対処法
+- **[DevRev API更新](docs/DEVREV_API_UPDATE.md)** - 最新API仕様への対応
+- **[DevRev カスタムオブジェクト](docs/DEVREV_CUSTOM_OBJECTS.md)** - カスタムオブジェクトでの休暇申請管理
 
 ### トラブルシューティング
 - **[401認証エラー (本番環境)](docs/PRODUCTION_401_ERROR.md)** - 本番環境での認証エラー対処法
