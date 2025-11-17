@@ -1,0 +1,10 @@
+{
+  "execMap": {
+    "js": "node --no-deprecation"
+  },
+  "env": {
+    "NODE_VERSION": "22"
+  },
+  "watch": ["src"],
+  "ext": "js,json"
+}

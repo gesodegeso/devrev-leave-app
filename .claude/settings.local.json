@@ -23,7 +23,8 @@
       "Bash(npm run test:jwt:*)",
       "Bash(node test/get-jwt-token.js:*)",
       "Bash(find:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(timeout 5 npm run dev)"
     ],
     "deny": [],
     "ask": []
