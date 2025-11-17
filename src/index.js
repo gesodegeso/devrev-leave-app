@@ -17,11 +17,18 @@ server.listen(process.env.PORT || 3978, () => {
 });
 
 // Create credential factory for authentication
-const credentialsFactory = new ConfigurationServiceClientCredentialFactory({
+const credentialConfig = {
   MicrosoftAppId: process.env.MICROSOFT_APP_ID,
   MicrosoftAppPassword: process.env.MICROSOFT_APP_PASSWORD,
   MicrosoftAppType: process.env.MICROSOFT_APP_TYPE || "MultiTenant",
-});
+};
+
+// Add TenantId for SingleTenant configuration
+if (process.env.MICROSOFT_APP_TENANT_ID) {
+  credentialConfig.MicrosoftAppTenantId = process.env.MICROSOFT_APP_TENANT_ID;
+}
+
+const credentialsFactory = new ConfigurationServiceClientCredentialFactory(credentialConfig);
 
 // Create bot framework authentication
 const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication(

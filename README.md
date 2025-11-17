@@ -49,15 +49,19 @@ devrev-leav-app/
 
 ## クイックリンク
 
+### セットアップガイド
 - **[クイックスタート（35分）](QUICKSTART.md)** - 最速でセットアップ
-- **[マルチテナントBot登録（推奨）](AZURE_SETUP_MULTITENANT.md)** - マルチテナント構成ガイド
-- **[その他のBot登録方法](AZURE_BOT_SETUP.md)** - シングルテナント、マネージドIDなど
+- **[マルチテナントBot登録（推奨）](AZURE_SETUP_MULTITENANT.md)** - 複数組織で使用可能な構成
+- **[シングルテナントBot登録](docs/SINGLE_TENANT_SETUP.md)** - 単一組織専用の構成
+- **[その他のBot登録方法](AZURE_BOT_SETUP.md)** - マネージドIDなど
 - **[ローカル開発環境](LOCAL_DEVELOPMENT.md)** - ローカルでのデバッグ方法
 - **[プロジェクト構造](PROJECT_STRUCTURE.md)** - 詳細なコード構造
+
+### 技術ドキュメント
 - **[CloudAdapter移行ガイド](docs/CLOUDADAPTER_MIGRATION.md)** - 最新のBot Framework適用
+- **[非推奨警告について](docs/DEPRECATION_WARNING_GUIDE.md)** - http_parser警告の対処法
 
 ### トラブルシューティング
-
 - **[401認証エラー (本番環境)](docs/PRODUCTION_401_ERROR.md)** - 本番環境での認証エラー対処法
 - **[認証エラー全般](docs/TROUBLESHOOTING_AUTH.md)** - 認証関連のトラブルシューティング
 - **[JWTトークン取得ガイド](docs/JWT_TOKEN_GUIDE.md)** - トークン取得とテスト方法
