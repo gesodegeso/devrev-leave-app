@@ -215,15 +215,6 @@ class TeamsLeaveBot extends ActivityHandler {
             };
 
             // Send proactive message to approver
-            // Use continueConversationAsync with proper credentials
-            const credentials = await this.adapter.botFrameworkAuthentication
-                .createCredentials(
-                    process.env.MICROSOFT_APP_ID,
-                    process.env.MICROSOFT_APP_TENANT_ID,
-                    process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
-                    true
-                );
-
             await this.adapter.continueConversationAsync(
                 process.env.MICROSOFT_APP_ID,
                 conversationReference,
