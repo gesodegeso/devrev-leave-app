@@ -71,23 +71,11 @@ class TeamsLeaveBot extends ActivityHandler {
         try {
             console.log('Handling leave request command');
 
-            // Get conversation type and approver
-            const conversationType = context.activity.conversation.conversationType;
-            let approverName = '';
-            let approverUserId = '';
+            // Get team members for approver selection
+            const teamMembers = await this.getTeamMembersForSelection(context);
 
-            // If it's a 1-on-1 chat, get the other person as approver
-            if (conversationType === 'personal') {
-                const members = await this.getConversationMembers(context);
-                const otherMember = members.find(m => m.id !== context.activity.recipient.id);
-                if (otherMember) {
-                    approverName = otherMember.name;
-                    approverUserId = otherMember.id;
-                }
-            }
-
-            // Create adaptive card with pre-filled approver if available
-            const card = this.createLeaveRequestCard(approverName, approverUserId);
+            // Create adaptive card with team members list
+            const card = this.createLeaveRequestCard(teamMembers);
 
             await context.sendActivity({
                 attachments: [CardFactory.adaptiveCard(card)]
@@ -100,41 +88,63 @@ class TeamsLeaveBot extends ActivityHandler {
     }
 
     /**
-     * Get conversation members
+     * Get team members for approver selection
      */
-    async getConversationMembers(context) {
+    async getTeamMembersForSelection(context) {
         try {
             const members = await TeamsInfo.getMembers(context);
-            return members;
+
+            // Filter out the bot itself and current user
+            const currentUserId = context.activity.from.id;
+            const botId = context.activity.recipient.id;
+
+            const filteredMembers = members.filter(m =>
+                m.id !== currentUserId &&
+                m.id !== botId &&
+                m.userPrincipalName // Ensure it's a real user
+            );
+
+            // Format for ChoiceSet
+            return filteredMembers.map(member => ({
+                title: member.name,
+                value: JSON.stringify({
+                    id: member.id,
+                    name: member.name,
+                    email: member.email || member.userPrincipalName
+                })
+            }));
+
         } catch (error) {
-            console.error('Error getting conversation members:', error);
+            console.error('Error getting team members:', error);
+            // Return empty array if we can't get members
             return [];
         }
     }
 
     /**
-     * Create leave request card with optional pre-filled approver
+     * Create leave request card with team members for approver selection
      */
-    createLeaveRequestCard(approverName = '', approverUserId = '') {
+    createLeaveRequestCard(teamMembers = []) {
         // Clone the template card
         const card = JSON.parse(JSON.stringify(leaveRequestCard));
 
-        // If we have an approver, pre-fill the approver field
-        if (approverName && approverUserId) {
-            const approverInput = card.body.find(item =>
-                item.type === 'Input.Text' && item.id === 'approver'
-            );
-            if (approverInput) {
-                approverInput.value = approverName;
-            }
+        // Find and replace the approver input field with ChoiceSet
+        const approverInputIndex = card.body.findIndex(item =>
+            item.type === 'Input.Text' && item.id === 'approver'
+        );
 
-            // Store the userId in a hidden field
-            card.body.push({
-                type: 'Input.Text',
-                id: 'approverUserId',
-                isVisible: false,
-                value: approverUserId
-            });
+        if (approverInputIndex !== -1 && teamMembers.length > 0) {
+            // Replace text input with ChoiceSet
+            card.body[approverInputIndex] = {
+                type: 'Input.ChoiceSet',
+                id: 'approver',
+                style: 'filtered', // Enables search/filter functionality
+                placeholder: '承認者を選択してください',
+                choices: teamMembers
+            };
+        } else if (approverInputIndex !== -1) {
+            // If no team members available, keep the text input but update placeholder
+            card.body[approverInputIndex].placeholder = '承認者の名前を入力してください（チームメンバーを取得できませんでした）';
         }
 
         return card;
@@ -361,10 +371,29 @@ class TeamsLeaveBot extends ActivityHandler {
             console.log('Submitted data:', JSON.stringify(submittedData, null, 2));
 
             // Validate submitted data
-            if (!submittedData.startDate || !submittedData.endDate || !submittedData.reason) {
+            if (!submittedData.startDate || !submittedData.endDate || !submittedData.reason || !submittedData.approver) {
                 await context.sendActivity('すべての必須フィールドを入力してください。');
                 return;
             }
+
+            // Parse approver data (it's a JSON string from ChoiceSet)
+            let approverInfo;
+            try {
+                approverInfo = JSON.parse(submittedData.approver);
+            } catch (error) {
+                // If parsing fails, it might be a text input fallback
+                console.log('Approver is not JSON, treating as text input');
+                approverInfo = {
+                    name: submittedData.approver,
+                    id: '',
+                    email: ''
+                };
+            }
+
+            // Add parsed approver info to submitted data
+            submittedData.approverName = approverInfo.name;
+            submittedData.approverUserId = approverInfo.id;
+            submittedData.approverEmail = approverInfo.email;
 
             // Send confirmation to user
             await context.sendActivity('休暇申請を受け付けました。DevRevチケットを作成しています...');
@@ -380,7 +409,7 @@ class TeamsLeaveBot extends ActivityHandler {
                     `**休暇期間:** ${submittedData.startDate} ~ ${submittedData.endDate}\n` +
                     `**理由:** ${submittedData.reason}\n` +
                     `**有給利用:** ${submittedData.usePaidLeave === 'true' ? 'はい' : 'いいえ'}\n` +
-                    `**承認者:** ${submittedData.approver || '未指定'}\n\n`;
+                    `**承認者:** ${submittedData.approverName || '未指定'}\n\n`;
 
                 if (ticketResult.displayId) {
                     confirmationMessage += `**申請ID:** ${ticketResult.displayId}\n`;

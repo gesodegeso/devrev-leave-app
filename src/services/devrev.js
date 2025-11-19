@@ -28,8 +28,9 @@ class DevRevService {
                 endDate,
                 reason,
                 usePaidLeave,
-                approver,
-                approverUserId
+                approverName,
+                approverUserId,
+                approverEmail
             } = leaveData;
 
             // Calculate days
@@ -54,7 +55,7 @@ class DevRevService {
                     tnt__end_date: endDate,
                     tnt__days_count: days,
                     tnt__reason: reason,
-                    tnt__approver_name: approver || '',
+                    tnt__approver_name: approverName || '',
                     tnt__approver_teams_id: approverUserId || '',
                     tnt__status: 'pending', // 初期ステータス
                     tnt__leave_type: leaveType, // 'paid' or 'unpaid'
