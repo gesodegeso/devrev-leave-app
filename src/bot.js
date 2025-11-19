@@ -215,7 +215,7 @@ class TeamsLeaveBot extends ActivityHandler {
             };
 
             // Send proactive message to approver
-            await this.adapter.continueConversation(conversationReference, async (turnContext) => {
+            await this.adapter.continueConversationAsync(conversationReference, async (turnContext) => {
                 await turnContext.sendActivity({
                     attachments: [CardFactory.adaptiveCard(approvalCard)]
                 });
@@ -392,7 +392,7 @@ class TeamsLeaveBot extends ActivityHandler {
                 }
             };
 
-            await this.adapter.continueConversation(conversationReference, async (turnContext) => {
+            await this.adapter.continueConversationAsync(conversationReference, async (turnContext) => {
                 await turnContext.sendActivity(
                     `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`
                 );

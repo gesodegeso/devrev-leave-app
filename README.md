@@ -68,6 +68,7 @@ devrev-leav-app/
 - **[DevRev API更新](docs/DEVREV_API_UPDATE.md)** - 最新API仕様への対応
 - **[DevRev カスタムオブジェクト](docs/DEVREV_CUSTOM_OBJECTS.md)** - カスタムオブジェクトでの休暇申請管理
 - **[DevRev Workflow設定](docs/DEVREV_WORKFLOW_SETUP.md)** - 承認ワークフローの設定方法
+- **[NGINX Webhook設定](docs/NGINX_WEBHOOK_SETUP.md)** - DevRev Webhook用のNGINX設定方法
 
 ### トラブルシューティング
 - **[401認証エラー (本番環境)](docs/PRODUCTION_401_ERROR.md)** - 本番環境での認証エラー対処法
