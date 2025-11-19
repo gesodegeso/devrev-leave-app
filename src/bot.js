@@ -215,12 +215,25 @@ class TeamsLeaveBot extends ActivityHandler {
             };
 
             // Send proactive message to approver
-            await this.adapter.continueConversationAsync(conversationReference, async (turnContext) => {
-                await turnContext.sendActivity({
-                    attachments: [CardFactory.adaptiveCard(approvalCard)]
-                });
-                console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
-            });
+            // Use continueConversationAsync with proper credentials
+            const credentials = await this.adapter.botFrameworkAuthentication
+                .createCredentials(
+                    process.env.MICROSOFT_APP_ID,
+                    process.env.MICROSOFT_APP_TENANT_ID,
+                    process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
+                    true
+                );
+
+            await this.adapter.continueConversationAsync(
+                process.env.MICROSOFT_APP_ID,
+                conversationReference,
+                async (turnContext) => {
+                    await turnContext.sendActivity({
+                        attachments: [CardFactory.adaptiveCard(approvalCard)]
+                    });
+                    console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
+                }
+            );
 
         } catch (error) {
             console.error('[handleLeaveRequestCreated] Error:', error);
@@ -392,12 +405,16 @@ class TeamsLeaveBot extends ActivityHandler {
                 }
             };
 
-            await this.adapter.continueConversationAsync(conversationReference, async (turnContext) => {
-                await turnContext.sendActivity(
-                    `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`
-                );
-                console.log('[notifyRequester] Notification sent to:', requesterTeamsId);
-            });
+            await this.adapter.continueConversationAsync(
+                process.env.MICROSOFT_APP_ID,
+                conversationReference,
+                async (turnContext) => {
+                    await turnContext.sendActivity(
+                        `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`
+                    );
+                    console.log('[notifyRequester] Notification sent to:', requesterTeamsId);
+                }
+            );
 
         } catch (error) {
             console.error('[notifyRequester] Error:', error);

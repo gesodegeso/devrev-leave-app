@@ -42,7 +42,8 @@ const adapter = new CloudAdapter(botFrameworkAuthentication);
 // Error handler
 adapter.onTurnError = async (context, error) => {
   console.error(`\n [onTurnError] unhandled error: ${error}`);
-  console.error(error);
+  console.error('Error stack:', error.stack);
+  console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
   // Send a trace activity
   await context.sendTraceActivity(
