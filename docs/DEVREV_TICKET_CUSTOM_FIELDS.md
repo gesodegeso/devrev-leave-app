@@ -6,74 +6,76 @@
 
 `DEVREV_WORK_ITEM_TYPE=ticket` を使用する場合、以下のすべてのカスタムフィールドをDevRevで事前に定義する必要があります。
 
+**重要**: すべてのカスタムフィールド名には `tnt__` プレフィックスが必要です。
+
 ## 必須カスタムフィールド一覧
 
-### 1. requester_name
-- **フィールド名**: `requester_name`
+### 1. tnt__requester_name
+- **フィールド名**: `tnt__requester_name`
 - **タイプ**: Text (Short Text)
 - **説明**: 休暇申請者の名前
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `山田太郎`
 
-### 2. requester_email
-- **フィールド名**: `requester_email`
+### 2. tnt__requester_email
+- **フィールド名**: `tnt__requester_email`
 - **タイプ**: Text (Short Text)
 - **説明**: 休暇申請者のメールアドレス
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `yamada@example.com`
 
-### 3. requester_teams_id
-- **フィールド名**: `requester_teams_id`
+### 3. tnt__requester_teams_id
+- **フィールド名**: `tnt__requester_teams_id`
 - **タイプ**: Text (Short Text)
 - **説明**: 休暇申請者のMicrosoft Teams ID（プロアクティブメッセージ用）
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `29:1AbCdEfGhIjKlMnOpQrStUvWxYz...`
 
-### 4. start_date
-- **フィールド名**: `start_date`
+### 4. tnt__start_date
+- **フィールド名**: `tnt__start_date`
 - **タイプ**: Date
 - **説明**: 休暇開始日
 - **適用先**: Work (Ticket)
 - **必須**: No
-- **例**: `2025-01-20`
+- **例**: `2025-01-20T00:00:00.000Z` (ISO 8601形式)
 
-### 5. end_date
-- **フィールド名**: `end_date`
+### 5. tnt__end_date
+- **フィールド名**: `tnt__end_date`
 - **タイプ**: Date
 - **説明**: 休暇終了日
 - **適用先**: Work (Ticket)
 - **必須**: No
-- **例**: `2025-01-22`
+- **例**: `2025-01-22T00:00:00.000Z` (ISO 8601形式)
 
-### 6. days_count
-- **フィールド名**: `days_count`
+### 6. tnt__days_count
+- **フィールド名**: `tnt__days_count`
 - **タイプ**: Number (Integer)
 - **説明**: 休暇日数
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `3`
 
-### 7. reason
-- **フィールド名**: `reason`
+### 7. tnt__reason
+- **フィールド名**: `tnt__reason`
 - **タイプ**: Text (Long Text)
 - **説明**: 休暇理由
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `家族旅行のため`
 
-### 8. approver_name
-- **フィールド名**: `approver_name`
+### 8. tnt__approver_name
+- **フィールド名**: `tnt__approver_name`
 - **タイプ**: Text (Short Text)
 - **説明**: 承認者の名前
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `佐藤花子`
 
-### 9. approver_teams_id
-- **フィールド名**: `approver_teams_id`
+### 9. tnt__approver_teams_id
+- **フィールド名**: `tnt__approver_teams_id`
 - **タイプ**: Text (Short Text)
 - **説明**: 承認者のMicrosoft Teams ID（プロアクティブメッセージ用）
 - **適用先**: Work (Ticket)
@@ -81,8 +83,8 @@
 - **例**: `29:2XyZwVuTsRqPoNmLkJiHgFeDcBa...`
 - **重要**: このフィールドは承認依頼を送信するために**必須**です
 
-### 10. status
-- **フィールド名**: `status`
+### 10. tnt__status
+- **フィールド名**: `tnt__status`
 - **タイプ**: Text (Short Text) または Enum
 - **説明**: 申請ステータス
 - **適用先**: Work (Ticket)
@@ -93,8 +95,8 @@
   - `rejected` - 却下
 - **デフォルト値**: `pending`
 
-### 11. leave_type
-- **フィールド名**: `leave_type`
+### 11. tnt__leave_type
+- **フィールド名**: `tnt__leave_type`
 - **タイプ**: Text (Short Text) または Enum
 - **説明**: 休暇種別
 - **適用先**: Work (Ticket)
@@ -104,16 +106,16 @@
   - `unpaid` - 無給休暇
 - **例**: `paid`
 
-### 12. additional_system
-- **フィールド名**: `additional_system`
+### 12. tnt__additional_system
+- **フィールド名**: `tnt__additional_system`
 - **タイプ**: Text (Short Text)
 - **説明**: 追加休暇制度（AIによる自動判別結果）
 - **適用先**: Work (Ticket)
 - **必須**: No
 - **例**: `介護休暇`, `リフレッシュ休暇`, 空白
 
-### 13. request_type
-- **フィールド名**: `request_type`
+### 13. tnt__request_type
+- **フィールド名**: `tnt__request_type`
 - **タイプ**: Text (Short Text)
 - **説明**: リクエスト種別（休暇申請を他のチケットと区別するため）
 - **適用先**: Work (Ticket)
@@ -177,10 +179,12 @@ Custom Schema Fragment IDが正しいかどうかは、以下の特徴で確認�
 
 ### 各フィールドの設定例
 
-#### Date型フィールドの例（start_date, end_date）
+**重要**: すべてのフィールド名には `tnt__` プレフィックスを付けてください。
+
+#### Date型フィールドの例（tnt__start_date, tnt__end_date）
 
 ```
-Name: start_date
+Name: tnt__start_date
 Type: Date
 Description: 休暇開始日
 Applies to: Work
@@ -188,10 +192,10 @@ Object types: Ticket
 Required: No
 ```
 
-#### Text型フィールドの例（requester_name, approver_name）
+#### Text型フィールドの例（tnt__requester_name, tnt__approver_name）
 
 ```
-Name: requester_name
+Name: tnt__requester_name
 Type: Text
 Format: Short text
 Description: 休暇申請者の名前
@@ -201,10 +205,10 @@ Required: No
 Max length: 100
 ```
 
-#### Number型フィールドの例（days_count）
+#### Number型フィールドの例（tnt__days_count）
 
 ```
-Name: days_count
+Name: tnt__days_count
 Type: Number
 Format: Integer
 Description: 休暇日数
@@ -215,10 +219,10 @@ Min value: 1
 Max value: 365
 ```
 
-#### Enum型フィールドの例（status）
+#### Enum型フィールドの例（tnt__status）
 
 ```
-Name: status
+Name: tnt__status
 Type: Enum (または Text)
 Description: 申請ステータス
 Applies to: Work
@@ -233,10 +237,10 @@ Options (Enumの場合):
 Default value: pending
 ```
 
-### Long Text型フィールドの例（reason）
+### Long Text型フィールドの例（tnt__reason）
 
 ```
-Name: reason
+Name: tnt__reason
 Type: Text
 Format: Long text (Multiline)
 Description: 休暇理由

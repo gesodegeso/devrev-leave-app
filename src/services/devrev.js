@@ -199,19 +199,19 @@ class DevRevService {
                 body: body,
                 applies_to_part: this.defaultPartId,
                 custom_fields: {
-                    requester_name: requester.name,
-                    requester_email: requester.email || requester.aadObjectId || '',
-                    requester_teams_id: requester.id,
-                    start_date: startDateISO,  // ISO 8601 format
-                    end_date: endDateISO,      // ISO 8601 format
-                    days_count: days,
-                    reason: reason,
-                    approver_name: approverName || '',
-                    approver_teams_id: approverUserId || '',
-                    status: 'pending',
-                    leave_type: leaveType,
-                    additional_system: '', // AIが自動判別して追記するフィールド
-                    request_type: 'leave_request' // カスタムフィールドで種別を管理
+                    tnt__requester_name: requester.name,
+                    tnt__requester_email: requester.email || requester.aadObjectId || '',
+                    tnt__requester_teams_id: requester.id,
+                    tnt__start_date: startDateISO,  // ISO 8601 format
+                    tnt__end_date: endDateISO,      // ISO 8601 format
+                    tnt__days_count: days,
+                    tnt__reason: reason,
+                    tnt__approver_name: approverName || '',
+                    tnt__approver_teams_id: approverUserId || '',
+                    tnt__status: 'pending',
+                    tnt__leave_type: leaveType,
+                    tnt__additional_system: '', // AIが自動判別して追記するフィールド
+                    tnt__request_type: 'leave_request' // カスタムフィールドで種別を管理
                 }
             };
 
@@ -340,7 +340,7 @@ class DevRevService {
                     id: workId,
                     type: this.ticketType,
                     custom_fields: {
-                        status: newStatus
+                        tnt__status: newStatus
                     }
                 },
                 {

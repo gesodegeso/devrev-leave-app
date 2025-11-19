@@ -95,11 +95,14 @@ server.post("/api/devrev-webhook", async (req, res) => {
 
       // Check if it's a leave_request
       // For custom objects: check leaf_type
-      // For tickets: check subtype name or custom field request_type
+      // For tickets: check subtype name or custom field tnt__request_type
       const isLeaveRequest =
         workItem.leaf_type === 'leave_request' ||
         workItem.subtype === 'leave_request' ||
-        (workItem.custom_fields && workItem.custom_fields.request_type === 'leave_request');
+        (workItem.custom_fields && (
+          workItem.custom_fields.tnt__request_type === 'leave_request' ||
+          workItem.custom_fields.request_type === 'leave_request'
+        ));
 
       if (isLeaveRequest) {
         console.log("[DevRev Webhook] Leave request created:", workItem.id);

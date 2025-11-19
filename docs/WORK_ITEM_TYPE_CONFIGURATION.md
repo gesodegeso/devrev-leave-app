@@ -125,20 +125,21 @@ tnt__additional_system
 - **カスタムフィールドの制約**: 標準のカスタムフィールド機能を使用
 
 #### カスタムフィールド命名規則
-プレフィックス不要（標準のカスタムフィールド）：
+Tenant Fragmentと同様に `tnt__` プレフィックスが必要：
 
 ```
-requester_name
-requester_teams_id
-start_date
-end_date
-days_count
-reason
-approver_name
-approver_teams_id
-status
-leave_type
-additional_system
+tnt__requester_name
+tnt__requester_teams_id
+tnt__start_date
+tnt__end_date
+tnt__days_count
+tnt__reason
+tnt__approver_name
+tnt__approver_teams_id
+tnt__status
+tnt__leave_type
+tnt__additional_system
+tnt__request_type
 ```
 
 #### API エンドポイント
@@ -218,40 +219,41 @@ if (event.type === 'custom_object.created' || event.type === 'work.created') {
 
 ## フィールドマッピング
 
-Botは両方の命名規則に対応しています：
+**重要**: カスタムオブジェクトとチケットの両方で `tnt__` プレフィックスを使用します：
 
 | 用途 | カスタムオブジェクト | チケット |
 |------|---------------------|----------|
-| 申請者名 | `tnt__requester_name` | `requester_name` |
-| 申請者Teams ID | `tnt__requester_teams_id` | `requester_teams_id` |
-| 開始日 | `tnt__start_date` | `start_date` |
-| 終了日 | `tnt__end_date` | `end_date` |
-| 日数 | `tnt__days_count` | `days_count` |
-| 理由 | `tnt__reason` | `reason` |
-| 承認者名 | `tnt__approver_name` | `approver_name` |
-| 承認者Teams ID | `tnt__approver_teams_id` | `approver_teams_id` |
-| ステータス | `tnt__status` | `status` |
-| 休暇種別 | `tnt__leave_type` | `leave_type` |
-| 追加制度 | `tnt__additional_system` | `additional_system` |
+| 申請者名 | `tnt__requester_name` | `tnt__requester_name` |
+| 申請者Teams ID | `tnt__requester_teams_id` | `tnt__requester_teams_id` |
+| 開始日 | `tnt__start_date` | `tnt__start_date` |
+| 終了日 | `tnt__end_date` | `tnt__end_date` |
+| 日数 | `tnt__days_count` | `tnt__days_count` |
+| 理由 | `tnt__reason` | `tnt__reason` |
+| 承認者名 | `tnt__approver_name` | `tnt__approver_name` |
+| 承認者Teams ID | `tnt__approver_teams_id` | `tnt__approver_teams_id` |
+| ステータス | `tnt__status` | `tnt__status` |
+| 休暇種別 | `tnt__leave_type` | `tnt__leave_type` |
+| 追加制度 | `tnt__additional_system` | `tnt__additional_system` |
+| リクエスト種別 | (leaf_type使用) | `tnt__request_type` |
 
 ## 切り替え手順
 
 ### カスタムオブジェクト → チケットへの切り替え
 
-1. **DevRevでチケット用カスタムフィールドを定義**
+1. **DevRevでチケット用カスタムフィールドを定義**（すべて `tnt__` プレフィックス付き）
    ```
-   requester_name (Text)
-   requester_teams_id (Text)
-   start_date (Date)
-   end_date (Date)
-   days_count (Number)
-   reason (Text)
-   approver_name (Text)
-   approver_teams_id (Text)
-   status (Text)
-   leave_type (Text)
-   additional_system (Text)
-   request_type (Text)
+   tnt__requester_name (Text)
+   tnt__requester_teams_id (Text)
+   tnt__start_date (Date)
+   tnt__end_date (Date)
+   tnt__days_count (Number)
+   tnt__reason (Text)
+   tnt__approver_name (Text)
+   tnt__approver_teams_id (Text)
+   tnt__status (Text)
+   tnt__leave_type (Text)
+   tnt__additional_system (Text)
+   tnt__request_type (Text)
    ```
 
 2. **Custom Schema Fragment IDを取得**
@@ -272,7 +274,7 @@ Botは両方の命名規則に対応しています：
 
 5. **Webhook設定を更新**
    - Event type: `work.created`
-   - Filter: `custom_fields.request_type = 'leave_request'`
+   - Filter: `custom_fields.tnt__request_type = 'leave_request'`
    - または Subtypeを使用する場合: `type = 'ticket' AND subtype = 'leave_request'`
 
 6. **Botを再起動**
@@ -391,7 +393,7 @@ DEVREV_WORK_ITEM_TYPE=ticket
 **DevRev Webhook設定:**
 Subtypeを使用しない場合、Webhook Filterを以下のように設定:
 ```
-custom_fields.request_type = 'leave_request'
+custom_fields.tnt__request_type = 'leave_request'
 ```
 
 ## ベストプラクティス

@@ -184,9 +184,8 @@ class TeamsLeaveBot extends ActivityHandler {
             // Get custom fields (supports both custom objects and tickets)
             const fields = workItem.custom_fields || {};
 
-            // Try to get approver Teams ID from both naming conventions
-            // Custom object: tnt__approver_teams_id
-            // Ticket: approver_teams_id
+            // Both custom objects and tickets use tnt__ prefix
+            // Keeping fallback for backward compatibility
             const approverTeamsId = fields.tnt__approver_teams_id || fields.approver_teams_id;
 
             if (!approverTeamsId) {
@@ -236,9 +235,8 @@ class TeamsLeaveBot extends ActivityHandler {
     createApprovalCard(workItem) {
         const fields = workItem.custom_fields || {};
 
-        // Support both naming conventions
-        // Custom object: tnt__field_name
-        // Ticket: field_name
+        // Both custom objects and tickets use tnt__ prefix
+        // Keeping fallback for backward compatibility
         const getField = (tntName, regularName) => {
             return fields[tntName] || fields[regularName] || '不明';
         };
