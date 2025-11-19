@@ -1,5 +1,6 @@
 const { ActivityHandler, CardFactory, MessageFactory, TeamsInfo } = require('botbuilder');
 const { DevRevService } = require('./services/devrev');
+const { GraphService } = require('./services/graphService');
 const leaveRequestCard = require('./cards/leaveRequestCard.json');
 
 class TeamsLeaveBot extends ActivityHandler {
@@ -7,6 +8,7 @@ class TeamsLeaveBot extends ActivityHandler {
         super();
         this.adapter = adapter;
         this.devRevService = new DevRevService();
+        this.graphService = new GraphService();
 
         // Handle messages
         this.onMessage(async (context, next) => {
@@ -92,6 +94,27 @@ class TeamsLeaveBot extends ActivityHandler {
      */
     async getTeamMembersForSelection(context) {
         try {
+            const conversationType = context.activity.conversation.conversationType;
+
+            // For personal (1-on-1) chats, use Microsoft Graph API to get organization users
+            if (conversationType === 'personal') {
+                console.log('Personal chat detected - using Graph API to retrieve organization users');
+
+                // Use Graph API to get organization users
+                // Only get active users, limit to 100 most common approvers
+                const users = await this.graphService.getOrganizationUsers(
+                    100,
+                    'accountEnabled eq true'
+                );
+
+                if (users.length === 0) {
+                    console.warn('Graph API returned no users - check permissions');
+                }
+
+                return users;
+            }
+
+            // For team/group chats, get members from the conversation
             const members = await TeamsInfo.getMembers(context);
 
             // Filter out the bot itself and current user

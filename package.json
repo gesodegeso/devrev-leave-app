@@ -23,11 +23,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "botbuilder": "^4.23.1",
-    "restify": "^11.1.0",
-    "dotenv": "^16.4.7",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "adaptivecards": "^3.0.4",
     "axios": "^1.7.9",
-    "adaptivecards": "^3.0.4"
+    "botbuilder": "^4.23.1",
+    "dotenv": "^16.4.7",
+    "isomorphic-fetch": "^3.0.0",
+    "restify": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
