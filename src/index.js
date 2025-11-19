@@ -30,9 +30,9 @@ if (process.env.MICROSOFT_APP_TENANT_ID) {
 
 const credentialsFactory = new ConfigurationServiceClientCredentialFactory(credentialConfig);
 
-// Create bot framework authentication
+// Create bot framework authentication with proper configuration
 const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication(
-  {},
+  credentialConfig,
   credentialsFactory
 );
 
