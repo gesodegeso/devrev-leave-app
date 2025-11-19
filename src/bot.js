@@ -3,8 +3,9 @@ const { DevRevService } = require('./services/devrev');
 const leaveRequestCard = require('./cards/leaveRequestCard.json');
 
 class TeamsLeaveBot extends ActivityHandler {
-    constructor() {
+    constructor(adapter) {
         super();
+        this.adapter = adapter;
         this.devRevService = new DevRevService();
 
         // Handle messages
@@ -20,8 +21,12 @@ class TeamsLeaveBot extends ActivityHandler {
             if (text === '休暇申請' || text.toLowerCase() === 'leave request') {
                 await this.handleLeaveRequest(context);
             } else if (context.activity.value) {
-                // Handle adaptive card submission
-                await this.handleCardSubmit(context);
+                // Handle adaptive card submission (leave request or approval action)
+                if (context.activity.value.action === 'approve' || context.activity.value.action === 'reject') {
+                    await this.handleApprovalAction(context);
+                } else {
+                    await this.handleCardSubmit(context);
+                }
             } else {
                 // Unknown command
                 await context.sendActivity('コマンドを認識できませんでした。「休暇申請」とメンションしてください。');
@@ -133,6 +138,216 @@ class TeamsLeaveBot extends ActivityHandler {
         }
 
         return card;
+    }
+
+    /**
+     * Handle leave request created from DevRev webhook
+     */
+    async handleLeaveRequestCreated(customObject) {
+        try {
+            console.log('[handleLeaveRequestCreated] Processing:', customObject.id);
+
+            const fields = customObject.custom_fields || {};
+            const approverTeamsId = fields.tnt__approver_teams_id;
+
+            if (!approverTeamsId) {
+                console.warn('[handleLeaveRequestCreated] No approver Teams ID found');
+                return;
+            }
+
+            // Create approval request card
+            const approvalCard = this.createApprovalCard(customObject);
+
+            // Create conversation reference for the approver
+            const conversationReference = {
+                channelId: 'msteams',
+                serviceUrl: process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
+                conversation: {
+                    id: approverTeamsId,
+                    tenantId: process.env.MICROSOFT_APP_TENANT_ID
+                },
+                user: {
+                    id: approverTeamsId,
+                    aadObjectId: approverTeamsId
+                },
+                bot: {
+                    id: process.env.MICROSOFT_APP_ID,
+                    name: 'Leave Request Bot'
+                }
+            };
+
+            // Send proactive message to approver
+            await this.adapter.continueConversation(conversationReference, async (turnContext) => {
+                await turnContext.sendActivity({
+                    attachments: [CardFactory.adaptiveCard(approvalCard)]
+                });
+                console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
+            });
+
+        } catch (error) {
+            console.error('[handleLeaveRequestCreated] Error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create approval request Adaptive Card
+     */
+    createApprovalCard(customObject) {
+        const fields = customObject.custom_fields || {};
+
+        return {
+            $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+            type: 'AdaptiveCard',
+            version: '1.4',
+            body: [
+                {
+                    type: 'TextBlock',
+                    text: '🔔 休暇申請の承認依頼',
+                    weight: 'Bolder',
+                    size: 'Large',
+                    color: 'Accent'
+                },
+                {
+                    type: 'TextBlock',
+                    text: '以下の休暇申請が承認待ちです。',
+                    wrap: true,
+                    spacing: 'Small'
+                },
+                {
+                    type: 'FactSet',
+                    spacing: 'Medium',
+                    facts: [
+                        {
+                            title: '申請ID:',
+                            value: customObject.display_id || customObject.id
+                        },
+                        {
+                            title: '申請者:',
+                            value: fields.tnt__requester_name || '不明'
+                        },
+                        {
+                            title: '開始日:',
+                            value: fields.tnt__start_date || '不明'
+                        },
+                        {
+                            title: '終了日:',
+                            value: fields.tnt__end_date || '不明'
+                        },
+                        {
+                            title: '日数:',
+                            value: String(fields.tnt__days_count || '不明')
+                        },
+                        {
+                            title: '理由:',
+                            value: fields.tnt__reason || '不明'
+                        },
+                        {
+                            title: '有給利用:',
+                            value: fields.tnt__leave_type === 'paid' ? 'はい' : 'いいえ'
+                        },
+                        {
+                            title: '追加制度:',
+                            value: fields.tnt__additional_system || 'なし'
+                        }
+                    ]
+                }
+            ],
+            actions: [
+                {
+                    type: 'Action.Submit',
+                    title: '✅ 承認',
+                    style: 'positive',
+                    data: {
+                        action: 'approve',
+                        objectId: customObject.id,
+                        displayId: customObject.display_id,
+                        requesterName: fields.tnt__requester_name,
+                        requesterTeamsId: fields.tnt__requester_teams_id
+                    }
+                },
+                {
+                    type: 'Action.Submit',
+                    title: '❌ 却下',
+                    style: 'destructive',
+                    data: {
+                        action: 'reject',
+                        objectId: customObject.id,
+                        displayId: customObject.display_id,
+                        requesterName: fields.tnt__requester_name,
+                        requesterTeamsId: fields.tnt__requester_teams_id
+                    }
+                }
+            ]
+        };
+    }
+
+    /**
+     * Handle approval action (approve/reject)
+     */
+    async handleApprovalAction(context) {
+        try {
+            const data = context.activity.value;
+            const action = data.action; // 'approve' or 'reject'
+            const objectId = data.objectId;
+            const displayId = data.displayId;
+            const requesterName = data.requesterName;
+            const requesterTeamsId = data.requesterTeamsId;
+
+            console.log(`[handleApprovalAction] ${action} for object:`, objectId);
+
+            // Update status in DevRev
+            const newStatus = action === 'approve' ? 'approved' : 'rejected';
+            await this.devRevService.updateLeaveRequestStatus(objectId, newStatus);
+
+            // Send confirmation to approver
+            const actionText = action === 'approve' ? '承認' : '却下';
+            await context.sendActivity(`✅ 休暇申請 ${displayId} を${actionText}しました。`);
+
+            // Notify requester
+            await this.notifyRequester(requesterTeamsId, requesterName, displayId, newStatus);
+
+        } catch (error) {
+            console.error('[handleApprovalAction] Error:', error);
+            await context.sendActivity('❌ 処理中にエラーが発生しました。');
+        }
+    }
+
+    /**
+     * Notify requester about approval result
+     */
+    async notifyRequester(requesterTeamsId, requesterName, displayId, status) {
+        try {
+            const statusText = status === 'approved' ? '承認されました' : '却下されました';
+            const emoji = status === 'approved' ? '✅' : '❌';
+
+            const conversationReference = {
+                channelId: 'msteams',
+                serviceUrl: process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
+                conversation: {
+                    id: requesterTeamsId,
+                    tenantId: process.env.MICROSOFT_APP_TENANT_ID
+                },
+                user: {
+                    id: requesterTeamsId,
+                    aadObjectId: requesterTeamsId
+                },
+                bot: {
+                    id: process.env.MICROSOFT_APP_ID,
+                    name: 'Leave Request Bot'
+                }
+            };
+
+            await this.adapter.continueConversation(conversationReference, async (turnContext) => {
+                await turnContext.sendActivity(
+                    `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`
+                );
+                console.log('[notifyRequester] Notification sent to:', requesterTeamsId);
+            });
+
+        } catch (error) {
+            console.error('[notifyRequester] Error:', error);
+        }
     }
 
     /**

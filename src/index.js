@@ -60,13 +60,49 @@ adapter.onTurnError = async (context, error) => {
 };
 
 // Create the bot
-const bot = new TeamsLeaveBot();
+const bot = new TeamsLeaveBot(adapter);
 
 // Listen for incoming requests
 server.post("/api/messages", async (req, res) => {
   await adapter.process(req, res, async (context) => {
     await bot.run(context);
   });
+});
+
+// DevRev Webhook endpoint
+server.post("/api/devrev-webhook", async (req, res, next) => {
+  try {
+    console.log("[DevRev Webhook] Received event:", JSON.stringify(req.body, null, 2));
+
+    const event = req.body;
+
+    // Verify webhook signature if configured
+    const webhookSecret = process.env.DEVREV_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      // TODO: Implement signature verification with req.headers['x-devrev-signature']
+      console.log("[DevRev Webhook] Signature verification not yet implemented");
+    }
+
+    // Handle custom object created event
+    if (event.type === 'custom_object.created' || event.type === 'work.created') {
+      const customObject = event.custom_object || event.work;
+
+      // Check if it's a leave_request object
+      if (customObject && customObject.leaf_type === 'leave_request') {
+        console.log("[DevRev Webhook] Leave request created:", customObject.id);
+
+        // Send approval request to approver
+        await bot.handleLeaveRequestCreated(customObject);
+      }
+    }
+
+    res.send(200, { status: "ok" });
+    next();
+  } catch (error) {
+    console.error("[DevRev Webhook] Error:", error);
+    res.send(500, { error: error.message });
+    next();
+  }
 });
 
 // Health check endpoint

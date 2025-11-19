@@ -11,7 +11,12 @@ Microsoft Teamsで動作する休暇申請ボットです。Adaptive Cardを使�
   - 休暇理由（自由記述）
   - 有給休暇利用の有無
   - 承認者の名前（1対1チャットでは自動入力）
-- **DevRev統合**: 申請内容を自動的にDevRevのチケットとして作成
+- **DevRev統合**: 申請内容を自動的にDevRevのカスタムオブジェクトとして作成
+- **承認ワークフロー**: DevRevのWorkflow/AutomationからWebhookで承認依頼を送信
+  - AIによる追加休暇制度の自動判別（DevRev側）
+  - Teamsで承認者に承認依頼Adaptive Cardを送信
+  - ワンクリックで承認/却下が可能
+  - 承認結果を自動的に申請者に通知
 - **拡張可能**: コマンドベースの設計により、将来的に他のコマンドを追加可能
 
 ## プロジェクト構成
@@ -62,6 +67,7 @@ devrev-leav-app/
 - **[非推奨警告について](docs/DEPRECATION_WARNING_GUIDE.md)** - http_parser警告の対処法
 - **[DevRev API更新](docs/DEVREV_API_UPDATE.md)** - 最新API仕様への対応
 - **[DevRev カスタムオブジェクト](docs/DEVREV_CUSTOM_OBJECTS.md)** - カスタムオブジェクトでの休暇申請管理
+- **[DevRev Workflow設定](docs/DEVREV_WORKFLOW_SETUP.md)** - 承認ワークフローの設定方法
 
 ### トラブルシューティング
 - **[401認証エラー (本番環境)](docs/PRODUCTION_401_ERROR.md)** - 本番環境での認証エラー対処法

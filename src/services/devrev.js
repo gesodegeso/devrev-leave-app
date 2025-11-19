@@ -115,6 +115,46 @@ class DevRevService {
     }
 
     /**
+     * Update leave request status
+     */
+    async updateLeaveRequestStatus(objectId, newStatus) {
+        try {
+            console.log(`[DevRev] Updating object ${objectId} status to: ${newStatus}`);
+
+            const response = await axios.post(
+                `${this.apiBaseUrl}/custom-objects.update`,
+                {
+                    id: objectId,
+                    custom_fields: {
+                        tnt__status: newStatus
+                    }
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log('[DevRev] Status updated successfully');
+            return {
+                success: true,
+                data: response.data
+            };
+
+        } catch (error) {
+            console.error('[DevRev] Error updating status:', error);
+
+            if (error.response) {
+                console.error('[DevRev] API error response:', error.response.data);
+            }
+
+            throw error;
+        }
+    }
+
+    /**
      * Build ticket description from leave request data
      */
     buildTicketDescription(data) {
