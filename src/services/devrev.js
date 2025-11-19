@@ -172,11 +172,6 @@ class DevRevService {
             // Determine leave type (paid/unpaid)
             const leaveType = usePaidLeave === 'true' ? 'paid' : 'unpaid';
 
-            // Convert dates to ISO 8601 format (DevRev expects timestamp format)
-            // Input: "2025-01-20" → Output: "2025-01-20T00:00:00.000Z"
-            const startDateISO = new Date(startDate + 'T00:00:00.000Z').toISOString();
-            const endDateISO = new Date(endDate + 'T00:00:00.000Z').toISOString();
-
             // Build title and body
             const title = `休暇申請: ${requester.name} (${startDate} ~ ${endDate})`;
             const body = this.buildTicketDescription({
@@ -202,8 +197,8 @@ class DevRevService {
                     tnt__requester_name: requester.name,
                     tnt__requester_email: requester.email || requester.aadObjectId || '',
                     tnt__requester_teams_id: requester.id,
-                    tnt__start_date: startDateISO,  // ISO 8601 format
-                    tnt__end_date: endDateISO,      // ISO 8601 format
+                    tnt__start_date: startDate,  // YYYY-MM-DD format
+                    tnt__end_date: endDate,      // YYYY-MM-DD format
                     tnt__days_count: days,
                     tnt__reason: reason,
                     tnt__approver_name: approverName || '',
