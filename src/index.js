@@ -83,16 +83,31 @@ server.post("/api/devrev-webhook", async (req, res) => {
       console.log("[DevRev Webhook] Signature verification not yet implemented");
     }
 
-    // Handle custom object created event
+    // Handle custom object created event or work item created event
     if (event.type === 'custom_object.created' || event.type === 'work.created') {
-      const customObject = event.custom_object || event.work;
+      const workItem = event.custom_object || event.work;
 
-      // Check if it's a leave_request object
-      if (customObject && customObject.leaf_type === 'leave_request') {
-        console.log("[DevRev Webhook] Leave request created:", customObject.id);
+      if (!workItem) {
+        console.log("[DevRev Webhook] No work item found in event");
+        res.send(200, { status: "ok" });
+        return;
+      }
+
+      // Check if it's a leave_request
+      // For custom objects: check leaf_type
+      // For tickets: check subtype name or custom field request_type
+      const isLeaveRequest =
+        workItem.leaf_type === 'leave_request' ||
+        workItem.subtype === 'leave_request' ||
+        (workItem.custom_fields && workItem.custom_fields.request_type === 'leave_request');
+
+      if (isLeaveRequest) {
+        console.log("[DevRev Webhook] Leave request created:", workItem.id);
 
         // Send approval request to approver
-        await bot.handleLeaveRequestCreated(customObject);
+        await bot.handleLeaveRequestCreated(workItem);
+      } else {
+        console.log("[DevRev Webhook] Not a leave request, skipping");
       }
     }
 

@@ -200,12 +200,15 @@ class DevRevService {
                     approver_teams_id: approverUserId || '',
                     status: 'pending',
                     leave_type: leaveType,
-                    additional_system: '' // AIが自動判別して追記するフィールド
+                    additional_system: '', // AIが自動判別して追記するフィールド
+                    request_type: 'leave_request' // カスタムフィールドで種別を管理
                 }
             };
 
-            // Add subtype if configured
-            if (this.ticketSubtype) {
+            // Note: subtype requires a DevRev Subtype ID (not a string)
+            // If you need to use subtype, set DEVREV_TICKET_SUBTYPE to the actual subtype ID
+            // Example: DEVREV_TICKET_SUBTYPE=don:core:dvrv-us-1:devo/xxx:subtype/yyy
+            if (this.ticketSubtype && this.ticketSubtype.startsWith('don:')) {
                 ticketData.subtype = this.ticketSubtype;
             }
 

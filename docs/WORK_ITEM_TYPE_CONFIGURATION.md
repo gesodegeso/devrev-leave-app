@@ -45,9 +45,15 @@ DEVREV_TICKET_SUBTYPE=leave_request
 - **説明**: Work Itemのタイプ（チケット使用時のみ必要）
 
 #### DEVREV_TICKET_SUBTYPE
-- **値**: 任意の文字列（例: `leave_request`）
-- **デフォルト**: `leave_request`
-- **説明**: チケットのサブタイプ（チケット使用時のみ必要）
+- **値**: DevRevで作成したSubtype ID（DON形式）
+- **デフォルト**: 未設定
+- **説明**: チケットのサブタイプID（オプション）
+- **重要**: 文字列名ではなく、DevRevで作成したSubtypeの**DON ID**を指定する必要があります
+- **例**: `don:core:dvrv-us-1:devo/abc123:subtype/xyz789`
+- **取得方法**:
+  1. DevRev UIでSubtypeを作成
+  2. 作成したSubtypeの詳細画面でDON IDをコピー
+- **代替方法**: Subtypeを使用しない場合、カスタムフィールド `request_type` = `leave_request` で判別されます
 
 ## 方式の比較
 
@@ -325,6 +331,49 @@ tail -f /var/log/your-bot.log | grep "DevRev Webhook"
 
 **解決方法:**
 Botは両方の命名規則に自動対応しているため、DevRev側のフィールド名を確認してください。
+
+### 問題: Subtype エラー (invalid_field)
+
+**症状:**
+```json
+{
+  "message": "Bad Request",
+  "type": "invalid_field",
+  "field_name": "subtype"
+}
+```
+
+**原因:**
+1. Subtypeに文字列（例: `leave_request`）を指定している
+2. DevRevのSubtype機能が有効になっていない
+3. Subtype IDが間違っている
+
+**解決方法:**
+
+**方法1: Subtypeを使用しない（推奨）**
+```env
+DEVREV_WORK_ITEM_TYPE=ticket
+# DEVREV_TICKET_SUBTYPE の行をコメントアウトまたは削除
+```
+
+この場合、Botは自動的にカスタムフィールド `request_type` = `leave_request` を使用します。
+
+**方法2: 正しいSubtype IDを使用**
+1. DevRev UIでSubtypeを作成
+2. Subtypeの詳細画面でDON IDをコピー
+   ```
+   例: don:core:dvrv-us-1:devo/abc123:subtype/xyz789
+   ```
+3. .envファイルに設定
+   ```env
+   DEVREV_TICKET_SUBTYPE=don:core:dvrv-us-1:devo/abc123:subtype/xyz789
+   ```
+
+**DevRev Webhook設定:**
+Subtypeを使用しない場合、Webhook Filterを以下のように設定:
+```
+custom_fields.request_type = 'leave_request'
+```
 
 ## ベストプラクティス
 
