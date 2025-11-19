@@ -175,13 +175,19 @@ class TeamsLeaveBot extends ActivityHandler {
 
     /**
      * Handle leave request created from DevRev webhook
+     * Supports both custom objects and work items (tickets)
      */
-    async handleLeaveRequestCreated(customObject) {
+    async handleLeaveRequestCreated(workItem) {
         try {
-            console.log('[handleLeaveRequestCreated] Processing:', customObject.id);
+            console.log('[handleLeaveRequestCreated] Processing:', workItem.id);
 
-            const fields = customObject.custom_fields || {};
-            const approverTeamsId = fields.tnt__approver_teams_id;
+            // Get custom fields (supports both custom objects and tickets)
+            const fields = workItem.custom_fields || {};
+
+            // Try to get approver Teams ID from both naming conventions
+            // Custom object: tnt__approver_teams_id
+            // Ticket: approver_teams_id
+            const approverTeamsId = fields.tnt__approver_teams_id || fields.approver_teams_id;
 
             if (!approverTeamsId) {
                 console.warn('[handleLeaveRequestCreated] No approver Teams ID found');
@@ -189,7 +195,7 @@ class TeamsLeaveBot extends ActivityHandler {
             }
 
             // Create approval request card
-            const approvalCard = this.createApprovalCard(customObject);
+            const approvalCard = this.createApprovalCard(workItem);
 
             // Create conversation reference for the approver
             const conversationReference = {
@@ -225,9 +231,26 @@ class TeamsLeaveBot extends ActivityHandler {
 
     /**
      * Create approval request Adaptive Card
+     * Supports both custom objects and work items (tickets)
      */
-    createApprovalCard(customObject) {
-        const fields = customObject.custom_fields || {};
+    createApprovalCard(workItem) {
+        const fields = workItem.custom_fields || {};
+
+        // Support both naming conventions
+        // Custom object: tnt__field_name
+        // Ticket: field_name
+        const getField = (tntName, regularName) => {
+            return fields[tntName] || fields[regularName] || '不明';
+        };
+
+        const requesterName = getField('tnt__requester_name', 'requester_name');
+        const startDate = getField('tnt__start_date', 'start_date');
+        const endDate = getField('tnt__end_date', 'end_date');
+        const daysCount = getField('tnt__days_count', 'days_count');
+        const reason = getField('tnt__reason', 'reason');
+        const leaveType = fields.tnt__leave_type || fields.leave_type || '';
+        const additionalSystem = getField('tnt__additional_system', 'additional_system');
+        const requesterTeamsId = fields.tnt__requester_teams_id || fields.requester_teams_id;
 
         return {
             $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
@@ -253,35 +276,35 @@ class TeamsLeaveBot extends ActivityHandler {
                     facts: [
                         {
                             title: '申請ID:',
-                            value: customObject.display_id || customObject.id
+                            value: workItem.display_id || workItem.id
                         },
                         {
                             title: '申請者:',
-                            value: fields.tnt__requester_name || '不明'
+                            value: requesterName
                         },
                         {
                             title: '開始日:',
-                            value: fields.tnt__start_date || '不明'
+                            value: startDate
                         },
                         {
                             title: '終了日:',
-                            value: fields.tnt__end_date || '不明'
+                            value: endDate
                         },
                         {
                             title: '日数:',
-                            value: String(fields.tnt__days_count || '不明')
+                            value: String(daysCount)
                         },
                         {
                             title: '理由:',
-                            value: fields.tnt__reason || '不明'
+                            value: reason
                         },
                         {
                             title: '有給利用:',
-                            value: fields.tnt__leave_type === 'paid' ? 'はい' : 'いいえ'
+                            value: leaveType === 'paid' ? 'はい' : 'いいえ'
                         },
                         {
                             title: '追加制度:',
-                            value: fields.tnt__additional_system || 'なし'
+                            value: additionalSystem !== '不明' ? additionalSystem : 'なし'
                         }
                     ]
                 }
@@ -293,10 +316,10 @@ class TeamsLeaveBot extends ActivityHandler {
                     style: 'positive',
                     data: {
                         action: 'approve',
-                        objectId: customObject.id,
-                        displayId: customObject.display_id,
-                        requesterName: fields.tnt__requester_name,
-                        requesterTeamsId: fields.tnt__requester_teams_id
+                        objectId: workItem.id,
+                        displayId: workItem.display_id,
+                        requesterName: requesterName,
+                        requesterTeamsId: requesterTeamsId
                     }
                 },
                 {
@@ -305,10 +328,10 @@ class TeamsLeaveBot extends ActivityHandler {
                     style: 'destructive',
                     data: {
                         action: 'reject',
-                        objectId: customObject.id,
-                        displayId: customObject.display_id,
-                        requesterName: fields.tnt__requester_name,
-                        requesterTeamsId: fields.tnt__requester_teams_id
+                        objectId: workItem.id,
+                        displayId: workItem.display_id,
+                        requesterName: requesterName,
+                        requesterTeamsId: requesterTeamsId
                     }
                 }
             ]
