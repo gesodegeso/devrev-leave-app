@@ -30,6 +30,7 @@ DEVREV_WORK_ITEM_TYPE=custom_object
 DEVREV_WORK_ITEM_TYPE=ticket
 DEVREV_TICKET_TYPE=ticket
 DEVREV_TICKET_SUBTYPE=leave_request
+DEVREV_CUSTOM_SCHEMA_FRAGMENT=don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789
 ```
 
 ### パラメータの詳細
@@ -54,6 +55,17 @@ DEVREV_TICKET_SUBTYPE=leave_request
   1. DevRev UIでSubtypeを作成
   2. 作成したSubtypeの詳細画面でDON IDをコピー
 - **代替方法**: Subtypeを使用しない場合、カスタムフィールド `request_type` = `leave_request` で判別されます
+
+#### DEVREV_CUSTOM_SCHEMA_FRAGMENT
+- **値**: DevRevのCustom Schema Fragment ID（DON形式）
+- **デフォルト**: 未設定
+- **説明**: カスタムフィールドを使用するために**必須**のスキーマフラグメントID
+- **重要**: この設定がないと、DevRevはカスタムフィールドを受け付けません
+- **例**: `don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789`
+- **取得方法**:
+  1. DevRev Dashboard → Settings → Customization → Custom Schema Fragments
+  2. Work (Ticket) 用のSchema Fragmentを見つける
+  3. Schema Fragment IDをコピー
 
 ## 方式の比較
 
@@ -239,24 +251,31 @@ Botは両方の命名規則に対応しています：
    status (Text)
    leave_type (Text)
    additional_system (Text)
+   request_type (Text)
    ```
 
-2. **Subtypeを作成**
+2. **Custom Schema Fragment IDを取得**
+   - DevRev Dashboard → Settings → Customization → Custom Schema Fragments
+   - Work (Ticket) 用のSchema Fragment IDをコピー
+
+3. **Subtypeを作成**（オプション）
    - Name: `leave_request`
    - Type: `ticket`
 
-3. **.envファイルを更新**
+4. **.envファイルを更新**
    ```env
    DEVREV_WORK_ITEM_TYPE=ticket
    DEVREV_TICKET_TYPE=ticket
-   DEVREV_TICKET_SUBTYPE=leave_request
+   DEVREV_CUSTOM_SCHEMA_FRAGMENT=don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789
+   # DEVREV_TICKET_SUBTYPE=don:core:dvrv-us-1:devo/abc123:subtype/xyz789 (オプション)
    ```
 
-4. **Webhook設定を更新**
+5. **Webhook設定を更新**
    - Event type: `work.created`
-   - Filter: `type = 'ticket' AND subtype = 'leave_request'`
+   - Filter: `custom_fields.request_type = 'leave_request'`
+   - または Subtypeを使用する場合: `type = 'ticket' AND subtype = 'leave_request'`
 
-5. **Botを再起動**
+6. **Botを再起動**
    ```bash
    npm start
    ```

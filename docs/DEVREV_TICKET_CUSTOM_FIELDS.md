@@ -123,7 +123,52 @@
 
 ## DevRev UIでの設定手順
 
-### カスタムフィールドの作成
+### ステップ1: Custom Schema Fragmentの取得
+
+カスタムフィールドを使用するには、**Custom Schema Fragment ID**が必要です。
+
+1. **DevRev Dashboard** にログイン
+2. **Settings** (⚙️) をクリック
+3. **Customization** → **Custom Schema Fragments** を選択
+4. Work (Ticket) 用のSchema Fragmentを見つける
+5. Schema Fragment IDをコピー（形式: `don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789`）
+6. `.env` ファイルに設定:
+   ```env
+   DEVREV_CUSTOM_SCHEMA_FRAGMENT=don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789
+   ```
+
+**重要**: この設定がないと、DevRevはカスタムフィールドを受け付けません。
+
+#### Custom Schema Fragment IDの詳細
+
+Custom Schema Fragmentは、DevRevのカスタムフィールドスキーマを定義するためのオブジェクトです。
+
+**取得手順の詳細**:
+
+1. DevRev Dashboard にアクセス
+2. 右上の Settings アイコン (⚙️) をクリック
+3. 左メニューから **Customization** を選択
+4. **Custom Schema Fragments** タブをクリック
+5. リストから Work (Ticket) に関連するSchema Fragmentを探す
+   - 名前に "Work" や "Ticket" が含まれているものを選択
+   - デフォルトでは1つ以上のSchema Fragmentが存在します
+6. Schema Fragmentをクリックして詳細画面を開く
+7. **ID** フィールドをコピー
+   - 形式: `don:core:dvrv-us-1:devo/YOUR_ORG_ID:custom_type_fragment/FRAGMENT_ID`
+
+**確認方法**:
+
+Custom Schema Fragment IDが正しいかどうかは、以下の特徴で確認できます:
+- `don:core:` で始まる
+- `custom_type_fragment` を含む
+- ハイフンで区切られた長い文字列
+
+**トラブルシューティング**:
+
+- **Schema Fragmentが見つからない場合**: DevRev管理者に連絡して、Custom Schema Fragmentsへのアクセス権を確認してください
+- **複数のSchema Fragmentがある場合**: Work/Ticket用のものを選択してください。不明な場合は、DevRevサポートに問い合わせてください
+
+### ステップ2: カスタムフィールドの作成
 
 1. **DevRev Dashboard** にログイン
 2. **Settings** (⚙️) をクリック
@@ -273,6 +318,7 @@ curl -X GET "https://api.devrev.ai/custom-schemas.get?id=YOUR_SCHEMA_ID" \
 1. `.env` を設定:
    ```env
    DEVREV_WORK_ITEM_TYPE=ticket
+   DEVREV_CUSTOM_SCHEMA_FRAGMENT=don:core:dvrv-us-1:devo/abc123:custom_type_fragment/xyz789
    ```
 
 2. Botを再起動
@@ -281,7 +327,12 @@ curl -X GET "https://api.devrev.ai/custom-schemas.get?id=YOUR_SCHEMA_ID" \
 
 4. DevRev APIからのレスポンスを確認:
    ```
-   [DevRev] Creating ticket: {...}
+   [DevRev] Using work item type: ticket
+   [DevRev] Creating ticket: {
+     "type": "ticket",
+     "custom_schema_fragments": ["don:core:..."],
+     "custom_fields": {...}
+   }
    [DevRev] API response: {...}
    ```
 

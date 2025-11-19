@@ -10,12 +10,17 @@ class DevRevService {
         this.workItemType = process.env.DEVREV_WORK_ITEM_TYPE || 'custom_object';
         this.ticketType = process.env.DEVREV_TICKET_TYPE || 'ticket';
         this.ticketSubtype = process.env.DEVREV_TICKET_SUBTYPE || 'leave_request';
+        this.customSchemaFragment = process.env.DEVREV_CUSTOM_SCHEMA_FRAGMENT;
 
         if (!this.apiToken) {
             console.warn('WARNING: DEVREV_API_TOKEN is not set. DevRev integration will not work.');
         }
 
         console.log(`[DevRev] Using work item type: ${this.workItemType}`);
+
+        if (this.workItemType === 'ticket' && !this.customSchemaFragment) {
+            console.warn('WARNING: DEVREV_CUSTOM_SCHEMA_FRAGMENT is not set. Custom fields may not work for tickets.');
+        }
     }
 
     /**
@@ -209,6 +214,11 @@ class DevRevService {
                     request_type: 'leave_request' // カスタムフィールドで種別を管理
                 }
             };
+
+            // Add custom schema fragment if configured (required for custom fields)
+            if (this.customSchemaFragment) {
+                ticketData.custom_schema_fragments = [this.customSchemaFragment];
+            }
 
             // Note: subtype requires a DevRev Subtype ID (not a string)
             // If you need to use subtype, set DEVREV_TICKET_SUBTYPE to the actual subtype ID
