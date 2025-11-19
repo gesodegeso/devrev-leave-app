@@ -1,4 +1,4 @@
-const { ActivityHandler, CardFactory, MessageFactory } = require('botbuilder');
+const { ActivityHandler, CardFactory, MessageFactory, TeamsInfo } = require('botbuilder');
 const { DevRevService } = require('./services/devrev');
 const leaveRequestCard = require('./cards/leaveRequestCard.json');
 
@@ -104,7 +104,7 @@ class TeamsLeaveBot extends ActivityHandler {
      */
     async getConversationMembers(context) {
         try {
-            const members = await context.adapter.getConversationMembers(context);
+            const members = await TeamsInfo.getMembers(context);
             return members;
         } catch (error) {
             console.error('Error getting conversation members:', error);
