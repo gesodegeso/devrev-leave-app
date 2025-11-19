@@ -70,7 +70,7 @@ server.post("/api/messages", async (req, res) => {
 });
 
 // DevRev Webhook endpoint
-server.post("/api/devrev-webhook", async (req, res, next) => {
+server.post("/api/devrev-webhook", async (req, res) => {
   try {
     console.log("[DevRev Webhook] Received event:", JSON.stringify(req.body, null, 2));
 
@@ -97,11 +97,9 @@ server.post("/api/devrev-webhook", async (req, res, next) => {
     }
 
     res.send(200, { status: "ok" });
-    next();
   } catch (error) {
     console.error("[DevRev Webhook] Error:", error);
     res.send(500, { error: error.message });
-    next();
   }
 });
 
