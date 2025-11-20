@@ -28,7 +28,9 @@ if (process.env.MICROSOFT_APP_TENANT_ID) {
   credentialConfig.MicrosoftAppTenantId = process.env.MICROSOFT_APP_TENANT_ID;
 }
 
-const credentialsFactory = new ConfigurationServiceClientCredentialFactory(credentialConfig);
+const credentialsFactory = new ConfigurationServiceClientCredentialFactory(
+  credentialConfig
+);
 
 // Create bot framework authentication with proper configuration
 const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication(
@@ -42,8 +44,11 @@ const adapter = new CloudAdapter(botFrameworkAuthentication);
 // Error handler
 adapter.onTurnError = async (context, error) => {
   console.error(`\n [onTurnError] unhandled error: ${error}`);
-  console.error('Error stack:', error.stack);
-  console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+  console.error("Error stack:", error.stack);
+  console.error(
+    "Full error object:",
+    JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+  );
 
   // Send a trace activity
   await context.sendTraceActivity(
@@ -73,7 +78,10 @@ server.post("/api/messages", async (req, res) => {
 // DevRev Webhook endpoint
 server.post("/api/devrev-webhook", async (req, res) => {
   try {
-    console.log("[DevRev Webhook] Received event:", JSON.stringify(req.body, null, 2));
+    console.log(
+      "[DevRev Webhook] Received event:",
+      JSON.stringify(req.body, null, 2)
+    );
 
     const event = req.body;
 
@@ -81,11 +89,16 @@ server.post("/api/devrev-webhook", async (req, res) => {
     const webhookSecret = process.env.DEVREV_WEBHOOK_SECRET;
     if (webhookSecret) {
       // TODO: Implement signature verification with req.headers['x-devrev-signature']
-      console.log("[DevRev Webhook] Signature verification not yet implemented");
+      console.log(
+        "[DevRev Webhook] Signature verification not yet implemented"
+      );
     }
 
     // Handle custom object created event or work item created event
-    if (event.type === 'custom_object.created' || event.type === 'work.created') {
+    if (
+      event.type === "custom_object.created" ||
+      event.type === "work.created"
+    ) {
       const workItem = event.custom_object || event.work;
 
       if (!workItem) {
@@ -98,12 +111,11 @@ server.post("/api/devrev-webhook", async (req, res) => {
       // For custom objects: check leaf_type
       // For tickets: check subtype name or custom field tnt__request_type
       const isLeaveRequest =
-        workItem.leaf_type === 'leave_request' ||
-        workItem.subtype === 'leave_request' ||
-        (workItem.custom_fields && (
-          workItem.custom_fields.tnt__request_type === 'leave_request' ||
-          workItem.custom_fields.request_type === 'leave_request'
-        ));
+        workItem.leaf_type === "leave_request" ||
+        workItem.subtype === "leave_request" ||
+        (workItem.custom_fields &&
+          (workItem.custom_fields.tnt__request_type === "leave_request" ||
+            workItem.custom_fields.request_type === "leave_request"));
 
       if (isLeaveRequest) {
         console.log("[DevRev Webhook] Leave request created:", workItem.id);

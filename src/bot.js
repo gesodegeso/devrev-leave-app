@@ -196,29 +196,40 @@ class TeamsLeaveBot extends ActivityHandler {
             // Create approval request card
             const approvalCard = this.createApprovalCard(workItem);
 
-            // Create conversation reference for the approver
+            // Create conversation parameters for Teams 1-on-1 chat
+            const conversationParameters = {
+                isGroup: false,
+                bot: {
+                    id: process.env.MICROSOFT_APP_ID,
+                    name: 'Leave Request Bot'
+                },
+                members: [
+                    {
+                        id: approverTeamsId
+                    }
+                ],
+                tenantId: process.env.MICROSOFT_APP_TENANT_ID
+            };
+
+            // Create conversation reference
             const conversationReference = {
                 channelId: 'msteams',
                 serviceUrl: process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
-                conversation: {
-                    id: approverTeamsId,
-                    tenantId: process.env.MICROSOFT_APP_TENANT_ID
-                },
-                user: {
-                    id: approverTeamsId,
-                    aadObjectId: approverTeamsId
-                },
                 bot: {
                     id: process.env.MICROSOFT_APP_ID,
                     name: 'Leave Request Bot'
                 }
             };
 
-            // Send proactive message to approver
-            await this.adapter.continueConversationAsync(
+            // Create a new conversation and send the approval request
+            await this.adapter.createConversationAsync(
                 process.env.MICROSOFT_APP_ID,
-                conversationReference,
+                conversationReference.channelId,
+                conversationReference.serviceUrl,
+                null, // audience
+                conversationParameters,
                 async (turnContext) => {
+                    // Send the approval card in the new conversation
                     await turnContext.sendActivity({
                         attachments: [CardFactory.adaptiveCard(approvalCard)]
                     });
@@ -379,26 +390,28 @@ class TeamsLeaveBot extends ActivityHandler {
             const statusText = status === 'approved' ? '承認されました' : '却下されました';
             const emoji = status === 'approved' ? '✅' : '❌';
 
-            const conversationReference = {
-                channelId: 'msteams',
-                serviceUrl: process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
-                conversation: {
-                    id: requesterTeamsId,
-                    tenantId: process.env.MICROSOFT_APP_TENANT_ID
-                },
-                user: {
-                    id: requesterTeamsId,
-                    aadObjectId: requesterTeamsId
-                },
+            // Create conversation parameters for Teams 1-on-1 chat
+            const conversationParameters = {
+                isGroup: false,
                 bot: {
                     id: process.env.MICROSOFT_APP_ID,
                     name: 'Leave Request Bot'
-                }
+                },
+                members: [
+                    {
+                        id: requesterTeamsId
+                    }
+                ],
+                tenantId: process.env.MICROSOFT_APP_TENANT_ID
             };
 
-            await this.adapter.continueConversationAsync(
+            // Create a new conversation and send the notification
+            await this.adapter.createConversationAsync(
                 process.env.MICROSOFT_APP_ID,
-                conversationReference,
+                'msteams',
+                process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
+                null, // audience
+                conversationParameters,
                 async (turnContext) => {
                     await turnContext.sendActivity(
                         `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`
