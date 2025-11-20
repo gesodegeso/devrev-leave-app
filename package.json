@@ -29,6 +29,7 @@
     "botbuilder": "^4.23.1",
     "dotenv": "^16.4.7",
     "isomorphic-fetch": "^3.0.0",
+    "redis": "^5.10.0",
     "restify": "^11.1.0"
   },
   "devDependencies": {

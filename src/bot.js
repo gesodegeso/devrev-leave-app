@@ -1,6 +1,7 @@
 const { ActivityHandler, CardFactory, MessageFactory, TeamsInfo } = require('botbuilder');
 const { DevRevService } = require('./services/devrev');
 const { GraphService } = require('./services/graphService');
+const { ConversationStorage } = require('./services/conversationStorage');
 const leaveRequestCard = require('./cards/leaveRequestCard.json');
 
 class TeamsLeaveBot extends ActivityHandler {
@@ -10,9 +11,16 @@ class TeamsLeaveBot extends ActivityHandler {
         this.devRevService = new DevRevService();
         this.graphService = new GraphService();
 
+        // Initialize conversation storage with Redis
+        this.conversationStorage = new ConversationStorage();
+        this.initializeStorage();
+
         // Handle messages
         this.onMessage(async (context, next) => {
             console.log('Received message:', context.activity.text);
+
+            // Store conversation reference for proactive messaging
+            this.addConversationReference(context.activity);
 
             // Remove bot mentions to get clean text
             const text = this.removeBotMentions(context.activity.text).trim();
@@ -49,6 +57,53 @@ class TeamsLeaveBot extends ActivityHandler {
             }
             await next();
         });
+    }
+
+    /**
+     * Initialize storage connection
+     */
+    async initializeStorage() {
+        try {
+            await this.conversationStorage.connect();
+            console.log('[Bot] Conversation storage initialized');
+
+            // Log storage stats
+            const stats = await this.conversationStorage.getStats();
+            console.log('[Bot] Storage stats:', JSON.stringify(stats, null, 2));
+        } catch (error) {
+            console.error('[Bot] Failed to initialize storage:', error);
+            console.warn('[Bot] Will use in-memory fallback storage');
+        }
+    }
+
+    /**
+     * Store conversation reference for proactive messaging
+     */
+    async addConversationReference(activity) {
+        try {
+            const conversationReference = {
+                activityId: activity.id,
+                user: activity.from,
+                bot: activity.recipient,
+                conversation: activity.conversation,
+                channelId: activity.channelId,
+                serviceUrl: activity.serviceUrl
+            };
+
+            const userId = activity.from.id;
+
+            // Store in Redis (with memory fallback)
+            await this.conversationStorage.setConversationReference(userId, conversationReference);
+
+            console.log('[addConversationReference] Stored reference for user:', userId);
+            console.log('[addConversationReference] Service URL:', activity.serviceUrl);
+
+            // Log storage stats
+            const stats = await this.conversationStorage.getStats();
+            console.log('[addConversationReference] Storage stats - Memory:', stats.memoryCount, 'Redis:', stats.redisCount);
+        } catch (error) {
+            console.error('[addConversationReference] Error storing conversation reference:', error);
+        }
     }
 
     /**
@@ -197,61 +252,42 @@ class TeamsLeaveBot extends ActivityHandler {
                 return;
             }
 
+            // Check if we have a stored conversation reference for this approver
+            const conversationReference = await this.conversationStorage.getConversationReference(approverTeamsId);
+
+            if (!conversationReference) {
+                console.error('[handleLeaveRequestCreated] No conversation reference found for approver:', approverTeamsId);
+
+                // Get available user IDs for debugging
+                const userIds = await this.conversationStorage.getAllUserIds();
+                console.error('[handleLeaveRequestCreated] Available user IDs:', userIds);
+                console.error('[handleLeaveRequestCreated] The approver must interact with the bot at least once before receiving proactive messages');
+                return;
+            }
+
+            console.log('[handleLeaveRequestCreated] Found conversation reference for approver');
+            console.log('[handleLeaveRequestCreated] Service URL from stored reference:', conversationReference.serviceUrl);
+
             // Create approval request card
             const approvalCard = this.createApprovalCard(workItem);
 
-            // Create conversation parameters for Teams 1-on-1 chat
-            const conversationParameters = {
-                isGroup: false,
-                bot: {
-                    id: process.env.MICROSOFT_APP_ID,
-                    name: 'Leave Request Bot'
-                },
-                members: [
-                    {
-                        id: approverTeamsId
-                    }
-                ],
-                tenantId: process.env.MICROSOFT_APP_TENANT_ID
-            };
+            // Use continueConversationAsync with stored conversation reference
+            console.log('[handleLeaveRequestCreated] Sending proactive message using stored conversation reference');
 
-            // Create conversation reference
-            const conversationReference = {
-                channelId: 'msteams',
-                serviceUrl: process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
-                bot: {
-                    id: process.env.MICROSOFT_APP_ID,
-                    name: 'Leave Request Bot'
+            await this.adapter.continueConversationAsync(
+                process.env.MICROSOFT_APP_ID,
+                conversationReference,
+                async (turnContext) => {
+                    console.log('[handleLeaveRequestCreated] Inside conversation callback - sending approval card');
+                    // Send the approval card
+                    await turnContext.sendActivity({
+                        attachments: [CardFactory.adaptiveCard(approvalCard)]
+                    });
+                    console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
                 }
-            };
+            );
 
-            // Create a new conversation and send the approval request
-            console.log('[handleLeaveRequestCreated] Attempting to create conversation with parameters:', JSON.stringify(conversationParameters, null, 2));
-            console.log('[handleLeaveRequestCreated] Service URL:', conversationReference.serviceUrl);
-            console.log('[handleLeaveRequestCreated] Bot App ID:', process.env.MICROSOFT_APP_ID);
-
-            try {
-                await this.adapter.createConversationAsync(
-                    process.env.MICROSOFT_APP_ID,
-                    conversationReference.channelId,
-                    conversationReference.serviceUrl,
-                    null, // audience
-                    conversationParameters,
-                    async (turnContext) => {
-                        console.log('[handleLeaveRequestCreated] Inside conversation callback - sending card');
-                        // Send the approval card in the new conversation
-                        await turnContext.sendActivity({
-                            attachments: [CardFactory.adaptiveCard(approvalCard)]
-                        });
-                        console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
-                    }
-                );
-                console.log('[handleLeaveRequestCreated] createConversationAsync completed successfully');
-            } catch (createConvError) {
-                console.error('[handleLeaveRequestCreated] Error in createConversationAsync:', createConvError);
-                console.error('[handleLeaveRequestCreated] Error details:', JSON.stringify(createConvError, Object.getOwnPropertyNames(createConvError), 2));
-                throw createConvError;
-            }
+            console.log('[handleLeaveRequestCreated] Proactive message sent successfully');
 
         } catch (error) {
             console.error('[handleLeaveRequestCreated] Error:', error);
@@ -407,28 +443,25 @@ class TeamsLeaveBot extends ActivityHandler {
             const statusText = status === 'approved' ? '承認されました' : '却下されました';
             const emoji = status === 'approved' ? '✅' : '❌';
 
-            // Create conversation parameters for Teams 1-on-1 chat
-            const conversationParameters = {
-                isGroup: false,
-                bot: {
-                    id: process.env.MICROSOFT_APP_ID,
-                    name: 'Leave Request Bot'
-                },
-                members: [
-                    {
-                        id: requesterTeamsId
-                    }
-                ],
-                tenantId: process.env.MICROSOFT_APP_TENANT_ID
-            };
+            // Check if we have a stored conversation reference for this requester
+            const conversationReference = await this.conversationStorage.getConversationReference(requesterTeamsId);
 
-            // Create a new conversation and send the notification
-            await this.adapter.createConversationAsync(
+            if (!conversationReference) {
+                console.error('[notifyRequester] No conversation reference found for requester:', requesterTeamsId);
+
+                // Get available user IDs for debugging
+                const userIds = await this.conversationStorage.getAllUserIds();
+                console.error('[notifyRequester] Available user IDs:', userIds);
+                console.error('[notifyRequester] Cannot send notification - user has not interacted with bot');
+                return;
+            }
+
+            console.log('[notifyRequester] Found conversation reference for requester');
+
+            // Use continueConversationAsync with stored conversation reference
+            await this.adapter.continueConversationAsync(
                 process.env.MICROSOFT_APP_ID,
-                'msteams',
-                process.env.BOT_SERVICE_URL || 'https://smba.trafficmanager.net/apac/',
-                null, // audience
-                conversationParameters,
+                conversationReference,
                 async (turnContext) => {
                     await turnContext.sendActivity(
                         `${emoji} あなたの休暇申請（${displayId}）が${statusText}。`

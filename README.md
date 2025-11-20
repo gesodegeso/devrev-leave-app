@@ -47,6 +47,7 @@ devrev-leav-app/
 - Nginx
 - PM2 (プロセス管理)
 - SSL証明書（本番環境）
+- **Redis** (推奨 - プロアクティブメッセージングの永続化用)
 
 ### 外部サービス
 - Microsoft Azure (Botの登録のみ)
@@ -63,6 +64,8 @@ devrev-leav-app/
 - **[プロジェクト構造](PROJECT_STRUCTURE.md)** - 詳細なコード構造
 
 ### 技術ドキュメント
+- **[Redis セットアップガイド](docs/REDIS_SETUP.md)** - 会話参照の永続化設定（推奨）
+- **[プロアクティブメッセージングガイド](docs/PROACTIVE_MESSAGING_GUIDE.md)** - 承認依頼送信の仕組み
 - **[CloudAdapter移行ガイド](docs/CLOUDADAPTER_MIGRATION.md)** - 最新のBot Framework適用
 - **[非推奨警告について](docs/DEPRECATION_WARNING_GUIDE.md)** - http_parser警告の対処法
 - **[DevRev API更新](docs/DEVREV_API_UPDATE.md)** - 最新API仕様への対応
