@@ -107,6 +107,13 @@ server.post("/api/devrev-webhook", async (req, res) => {
         return;
       }
 
+      console.log("[DevRev Webhook] Work item details:");
+      console.log("[DevRev Webhook] - ID:", workItem.id);
+      console.log("[DevRev Webhook] - Type:", workItem.type);
+      console.log("[DevRev Webhook] - leaf_type:", workItem.leaf_type);
+      console.log("[DevRev Webhook] - subtype:", workItem.subtype);
+      console.log("[DevRev Webhook] - custom_fields:", JSON.stringify(workItem.custom_fields, null, 2));
+
       // Check if it's a leave_request
       // For custom objects: check leaf_type
       // For tickets: check subtype name or custom field tnt__request_type
@@ -116,6 +123,16 @@ server.post("/api/devrev-webhook", async (req, res) => {
         (workItem.custom_fields &&
           (workItem.custom_fields.tnt__request_type === "leave_request" ||
             workItem.custom_fields.request_type === "leave_request"));
+
+      console.log("[DevRev Webhook] isLeaveRequest check:");
+      console.log("[DevRev Webhook] - leaf_type === 'leave_request':", workItem.leaf_type === "leave_request");
+      console.log("[DevRev Webhook] - subtype === 'leave_request':", workItem.subtype === "leave_request");
+      console.log("[DevRev Webhook] - has custom_fields:", !!workItem.custom_fields);
+      if (workItem.custom_fields) {
+        console.log("[DevRev Webhook] - tnt__request_type:", workItem.custom_fields.tnt__request_type);
+        console.log("[DevRev Webhook] - request_type:", workItem.custom_fields.request_type);
+      }
+      console.log("[DevRev Webhook] - Final isLeaveRequest:", isLeaveRequest);
 
       if (isLeaveRequest) {
         console.log("[DevRev Webhook] Leave request created:", workItem.id);
