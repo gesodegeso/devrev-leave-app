@@ -165,7 +165,8 @@ server.post("/api/devrev-webhook", async (req, res) => {
     }
 
     // Handle work item updated event (for question answers)
-    if (event.type === "work.updated") {
+    // DevRev may send either "work.updated" or "work.update"
+    if (event.type === "work.updated" || event.type === "work.update") {
       const workItem = event.work;
 
       if (!workItem) {
@@ -178,12 +179,27 @@ server.post("/api/devrev-webhook", async (req, res) => {
       console.log("[DevRev Webhook] - ID:", workItem.id);
       console.log("[DevRev Webhook] - Type:", workItem.type);
       console.log("[DevRev Webhook] - Title:", workItem.title);
+      console.log("[DevRev Webhook] - Custom fields:", JSON.stringify(workItem.custom_fields, null, 2));
 
       // Check if it's a leave question Issue
-      const isLeaveQuestion =
+      // Check both title and custom fields
+      const customFields = workItem.custom_fields || {};
+      const isLeaveQuestionByTitle =
         workItem.type === "issue" &&
         workItem.title &&
         workItem.title.includes("休暇に関する質問");
+
+      const isLeaveQuestionByCustomField =
+        workItem.type === "issue" &&
+        (customFields.tnt__question_type === "leave_question" ||
+         customFields.tnt__question_type === "leave_request"); // Support both values
+
+      const isLeaveQuestion = isLeaveQuestionByTitle || isLeaveQuestionByCustomField;
+
+      console.log("[DevRev Webhook] Leave question check:");
+      console.log("[DevRev Webhook] - By title:", isLeaveQuestionByTitle);
+      console.log("[DevRev Webhook] - By custom field:", isLeaveQuestionByCustomField);
+      console.log("[DevRev Webhook] - Final result:", isLeaveQuestion);
 
       if (isLeaveQuestion) {
         console.log("[DevRev Webhook] Leave question updated:", workItem.id);
