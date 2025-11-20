@@ -93,15 +93,44 @@ server.post("/api/devrev-webhook", async (req, res) => {
     // If body is a string, try to parse it as JSON
     if (typeof event === 'string') {
       console.log("[DevRev Webhook] Body is a string, attempting to parse as JSON");
+
       try {
+        // First attempt: Parse as-is
         event = JSON.parse(event);
         console.log("[DevRev Webhook] Successfully parsed JSON string");
         console.log("[DevRev Webhook] Parsed event:", JSON.stringify(event, null, 2));
       } catch (parseError) {
-        console.error("[DevRev Webhook] Failed to parse JSON string:", parseError);
-        console.error("[DevRev Webhook] Raw string:", event);
-        res.send(400, { error: "Invalid JSON format" });
-        return;
+        console.log("[DevRev Webhook] First parse attempt failed, trying with escaped characters");
+
+        try {
+          // Second attempt: Clean and escape problematic characters
+          let cleanedString = event;
+
+          // Replace unescaped newlines and tabs in JSON string values
+          // This regex matches strings within quotes and replaces newlines/tabs
+          cleanedString = cleanedString.replace(
+            /"([^"\\]*(\\.[^"\\]*)*)"/g,
+            (_, content) => {
+              // Replace literal newlines and tabs with escaped versions
+              const escaped = content
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
+              return `"${escaped}"`;
+            }
+          );
+
+          event = JSON.parse(cleanedString);
+          console.log("[DevRev Webhook] Successfully parsed cleaned JSON string");
+          console.log("[DevRev Webhook] Parsed event:", JSON.stringify(event, null, 2));
+        } catch (secondParseError) {
+          console.error("[DevRev Webhook] Failed to parse JSON string after cleaning:", secondParseError);
+          console.error("[DevRev Webhook] Raw string:", event);
+          console.error("[DevRev Webhook] Raw string length:", event.length);
+          console.error("[DevRev Webhook] First 500 chars:", event.substring(0, 500));
+          res.send(400, { error: "Invalid JSON format" });
+          return;
+        }
       }
     }
 
