@@ -389,8 +389,7 @@ class DevRevService {
                 type: 'issue',
                 title: `休暇に関する質問: ${this.truncateText(question, 60)}`,
                 body: body,
-                applies_to_part: this.defaultPartId,
-                owned_by: [this.defaultPartId]
+                applies_to_part: this.defaultPartId
             };
 
             console.log('[DevRev] Creating issue:', JSON.stringify(issueData, null, 2));
