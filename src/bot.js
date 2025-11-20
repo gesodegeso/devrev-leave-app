@@ -188,8 +188,12 @@ class TeamsLeaveBot extends ActivityHandler {
             // Keeping fallback for backward compatibility
             const approverTeamsId = fields.tnt__approver_teams_id || fields.approver_teams_id;
 
-            if (!approverTeamsId) {
-                console.warn('[handleLeaveRequestCreated] No approver Teams ID found');
+            console.log('[handleLeaveRequestCreated] Custom fields:', JSON.stringify(fields, null, 2));
+            console.log('[handleLeaveRequestCreated] Approver Teams ID:', approverTeamsId);
+
+            if (!approverTeamsId || approverTeamsId === '') {
+                console.warn('[handleLeaveRequestCreated] No approver Teams ID found - approver_teams_id is empty or missing');
+                console.warn('[handleLeaveRequestCreated] Approver name:', fields.tnt__approver_name || fields.approver_name);
                 return;
             }
 
@@ -222,23 +226,36 @@ class TeamsLeaveBot extends ActivityHandler {
             };
 
             // Create a new conversation and send the approval request
-            await this.adapter.createConversationAsync(
-                process.env.MICROSOFT_APP_ID,
-                conversationReference.channelId,
-                conversationReference.serviceUrl,
-                null, // audience
-                conversationParameters,
-                async (turnContext) => {
-                    // Send the approval card in the new conversation
-                    await turnContext.sendActivity({
-                        attachments: [CardFactory.adaptiveCard(approvalCard)]
-                    });
-                    console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
-                }
-            );
+            console.log('[handleLeaveRequestCreated] Attempting to create conversation with parameters:', JSON.stringify(conversationParameters, null, 2));
+            console.log('[handleLeaveRequestCreated] Service URL:', conversationReference.serviceUrl);
+            console.log('[handleLeaveRequestCreated] Bot App ID:', process.env.MICROSOFT_APP_ID);
+
+            try {
+                await this.adapter.createConversationAsync(
+                    process.env.MICROSOFT_APP_ID,
+                    conversationReference.channelId,
+                    conversationReference.serviceUrl,
+                    null, // audience
+                    conversationParameters,
+                    async (turnContext) => {
+                        console.log('[handleLeaveRequestCreated] Inside conversation callback - sending card');
+                        // Send the approval card in the new conversation
+                        await turnContext.sendActivity({
+                            attachments: [CardFactory.adaptiveCard(approvalCard)]
+                        });
+                        console.log('[handleLeaveRequestCreated] Approval request sent to:', approverTeamsId);
+                    }
+                );
+                console.log('[handleLeaveRequestCreated] createConversationAsync completed successfully');
+            } catch (createConvError) {
+                console.error('[handleLeaveRequestCreated] Error in createConversationAsync:', createConvError);
+                console.error('[handleLeaveRequestCreated] Error details:', JSON.stringify(createConvError, Object.getOwnPropertyNames(createConvError), 2));
+                throw createConvError;
+            }
 
         } catch (error) {
             console.error('[handleLeaveRequestCreated] Error:', error);
+            console.error('[handleLeaveRequestCreated] Error stack:', error.stack);
             throw error;
         }
     }
@@ -445,9 +462,10 @@ class TeamsLeaveBot extends ActivityHandler {
             let approverInfo;
             try {
                 approverInfo = JSON.parse(submittedData.approver);
+                console.log('[handleCardSubmit] Parsed approver info:', approverInfo);
             } catch (error) {
                 // If parsing fails, it might be a text input fallback
-                console.log('Approver is not JSON, treating as text input');
+                console.log('[handleCardSubmit] Approver is not JSON, treating as text input');
                 approverInfo = {
                     name: submittedData.approver,
                     id: '',
@@ -459,6 +477,8 @@ class TeamsLeaveBot extends ActivityHandler {
             submittedData.approverName = approverInfo.name;
             submittedData.approverUserId = approverInfo.id;
             submittedData.approverEmail = approverInfo.email;
+
+            console.log('[handleCardSubmit] Approver details - Name:', submittedData.approverName, 'ID:', submittedData.approverUserId, 'Email:', submittedData.approverEmail);
 
             // Send confirmation to user
             await context.sendActivity('休暇申請を受け付けました。DevRevチケットを作成しています...');
