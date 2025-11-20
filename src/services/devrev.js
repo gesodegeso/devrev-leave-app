@@ -329,15 +329,24 @@ class DevRevService {
         try {
             console.log(`[DevRev] Updating ticket ${workId} status to: ${newStatus}`);
 
+            const updateData = {
+                id: workId,
+                type: this.ticketType,
+                custom_fields: {
+                    tnt__status: newStatus
+                }
+            };
+
+            // Add custom schema fragment if configured (required for custom fields)
+            if (this.customSchemaFragment) {
+                updateData.custom_schema_fragments = [this.customSchemaFragment];
+            }
+
+            console.log('[DevRev] Update request data:', JSON.stringify(updateData, null, 2));
+
             const response = await axios.post(
                 `${this.apiBaseUrl}/works.update`,
-                {
-                    id: workId,
-                    type: this.ticketType,
-                    custom_fields: {
-                        tnt__status: newStatus
-                    }
-                },
+                updateData,
                 {
                     headers: {
                         'Authorization': `Bearer ${this.apiToken}`,

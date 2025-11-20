@@ -417,20 +417,41 @@ class TeamsLeaveBot extends ActivityHandler {
             const requesterTeamsId = data.requesterTeamsId;
 
             console.log(`[handleApprovalAction] ${action} for object:`, objectId);
+            console.log(`[handleApprovalAction] Requester Teams ID:`, requesterTeamsId);
+            console.log(`[handleApprovalAction] Requester Name:`, requesterName);
 
             // Update status in DevRev
             const newStatus = action === 'approve' ? 'approved' : 'rejected';
+            console.log(`[handleApprovalAction] Updating status to:`, newStatus);
+
             await this.devRevService.updateLeaveRequestStatus(objectId, newStatus);
+            console.log(`[handleApprovalAction] Status updated successfully in DevRev`);
 
             // Send confirmation to approver
             const actionText = action === 'approve' ? '承認' : '却下';
             await context.sendActivity(`✅ 休暇申請 ${displayId} を${actionText}しました。`);
 
             // Notify requester
-            await this.notifyRequester(requesterTeamsId, requesterName, displayId, newStatus);
+            console.log(`[handleApprovalAction] Attempting to notify requester:`, requesterTeamsId);
+
+            if (!requesterTeamsId) {
+                console.error(`[handleApprovalAction] Requester Teams ID is missing - cannot send notification`);
+                await context.sendActivity(`⚠️ 申請者への通知を送信できませんでした（Teams IDが見つかりません）`);
+                return;
+            }
+
+            try {
+                await this.notifyRequester(requesterTeamsId, requesterName, displayId, newStatus);
+                console.log(`[handleApprovalAction] Requester notification sent successfully`);
+                await context.sendActivity(`📧 申請者 ${requesterName} に結果を通知しました。`);
+            } catch (notifyError) {
+                console.error(`[handleApprovalAction] Failed to notify requester:`, notifyError);
+                await context.sendActivity(`⚠️ 申請者への通知送信に失敗しました。申請者がBotと対話していない可能性があります。`);
+            }
 
         } catch (error) {
             console.error('[handleApprovalAction] Error:', error);
+            console.error('[handleApprovalAction] Error stack:', error.stack);
             await context.sendActivity('❌ 処理中にエラーが発生しました。');
         }
     }
