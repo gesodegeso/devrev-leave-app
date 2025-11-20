@@ -265,17 +265,19 @@ class TeamsLeaveBot extends ActivityHandler {
         try {
             console.log('[handleQuestionAnswered] Processing:', workItem.id);
 
-            // Extract questioner Teams ID from body
-            const body = workItem.body || '';
-            const teamsIdMatch = body.match(/Teams User ID[:\s]*([^\n]+)/);
+            // Get custom fields
+            const customFields = workItem.custom_fields || {};
+            console.log('[handleQuestionAnswered] Custom fields:', JSON.stringify(customFields, null, 2));
 
-            if (!teamsIdMatch) {
-                console.error('[handleQuestionAnswered] No Teams User ID found in issue body');
-                console.error('[handleQuestionAnswered] Body:', body);
+            // Extract questioner Teams ID from custom fields
+            const questionerTeamsId = customFields.tnt__questioner_teams_id;
+
+            if (!questionerTeamsId) {
+                console.error('[handleQuestionAnswered] No questioner Teams ID found in custom fields');
+                console.error('[handleQuestionAnswered] Available fields:', Object.keys(customFields));
                 return;
             }
 
-            const questionerTeamsId = teamsIdMatch[1].trim();
             console.log('[handleQuestionAnswered] Questioner Teams ID:', questionerTeamsId);
 
             // Get conversation reference
@@ -290,15 +292,21 @@ class TeamsLeaveBot extends ActivityHandler {
 
             console.log('[handleQuestionAnswered] Found conversation reference for questioner');
 
-            // Extract question title and answer from latest comment or body
-            const title = workItem.title || '質問';
+            // Extract question and answer from custom fields
+            const questionText = customFields.tnt__question_text || 'Unknown question';
+            const answerText = customFields.tnt__answer_text || '';
             const displayId = workItem.display_id || workItem.id;
 
             // Create answer notification message
-            const answerMessage = `📬 質問への回答が届きました！\n\n` +
-                `**質問:** ${title.replace('休暇に関する質問: ', '')}\n` +
-                `**Issue ID:** ${displayId}\n\n` +
-                `DevRevで回答を確認してください: https://app.devrev.ai/work/${displayId}`;
+            let answerMessage = `📬 質問への回答が届きました！\n\n`;
+            answerMessage += `**質問:** ${questionText}\n`;
+            answerMessage += `**Issue ID:** ${displayId}\n\n`;
+
+            if (answerText) {
+                answerMessage += `**回答:**\n${answerText}\n\n`;
+            }
+
+            answerMessage += `詳細はDevRevで確認してください: https://app.devrev.ai/work/${displayId}`;
 
             // Send notification to questioner
             await this.adapter.continueConversationAsync(

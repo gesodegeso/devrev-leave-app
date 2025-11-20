@@ -79,11 +79,31 @@ server.post("/api/messages", async (req, res) => {
 server.post("/api/devrev-webhook", async (req, res) => {
   try {
     console.log(
+      "[DevRev Webhook] Received raw body type:",
+      typeof req.body
+    );
+    console.log(
       "[DevRev Webhook] Received event:",
       JSON.stringify(req.body, null, 2)
     );
 
-    const event = req.body;
+    let event = req.body;
+
+    // Handle double-encoded JSON string from DevRev webhook
+    // If body is a string, try to parse it as JSON
+    if (typeof event === 'string') {
+      console.log("[DevRev Webhook] Body is a string, attempting to parse as JSON");
+      try {
+        event = JSON.parse(event);
+        console.log("[DevRev Webhook] Successfully parsed JSON string");
+        console.log("[DevRev Webhook] Parsed event:", JSON.stringify(event, null, 2));
+      } catch (parseError) {
+        console.error("[DevRev Webhook] Failed to parse JSON string:", parseError);
+        console.error("[DevRev Webhook] Raw string:", event);
+        res.send(400, { error: "Invalid JSON format" });
+        return;
+      }
+    }
 
     // Verify webhook signature if configured
     const webhookSecret = process.env.DEVREV_WEBHOOK_SECRET;

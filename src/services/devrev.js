@@ -11,6 +11,7 @@ class DevRevService {
         this.ticketType = process.env.DEVREV_TICKET_TYPE || 'ticket';
         this.ticketSubtype = process.env.DEVREV_TICKET_SUBTYPE || 'leave_request';
         this.customSchemaFragment = process.env.DEVREV_CUSTOM_SCHEMA_FRAGMENT;
+        this.questionSchemaFragment = process.env.DEVREV_QUESTION_SCHEMA_FRAGMENT;
 
         if (!this.apiToken) {
             console.warn('WARNING: DEVREV_API_TOKEN is not set. DevRev integration will not work.');
@@ -20,6 +21,10 @@ class DevRevService {
 
         if (this.workItemType === 'ticket' && !this.customSchemaFragment) {
             console.warn('WARNING: DEVREV_CUSTOM_SCHEMA_FRAGMENT is not set. Custom fields may not work for tickets.');
+        }
+
+        if (!this.questionSchemaFragment) {
+            console.warn('WARNING: DEVREV_QUESTION_SCHEMA_FRAGMENT is not set. Question custom fields may not work.');
         }
     }
 
@@ -381,16 +386,29 @@ class DevRevService {
 
             const { question, category } = questionData;
 
-            // Build issue body
-            const body = this.buildQuestionBody(question, category, requester);
+            // Prepare custom fields
+            const customFields = {
+                tnt__question_type: 'leave_question',
+                tnt__question_text: question,
+                tnt__question_category: category || 'other',
+                tnt__questioner_name: requester.name || 'Unknown',
+                tnt__questioner_teams_id: requester.id,
+                tnt__questioner_email: requester.email || requester.userPrincipalName || '',
+                tnt__answer_status: 'pending'
+            };
 
-            // Create issue
+            // Create issue with custom fields
             const issueData = {
                 type: 'issue',
                 title: `休暇に関する質問: ${this.truncateText(question, 60)}`,
-                body: body,
-                applies_to_part: this.defaultPartId
+                applies_to_part: this.defaultPartId,
+                custom_fields: customFields
             };
+
+            // Add custom schema fragment if configured
+            if (this.questionSchemaFragment) {
+                issueData.custom_schema_fragments = [this.questionSchemaFragment];
+            }
 
             console.log('[DevRev] Creating issue:', JSON.stringify(issueData, null, 2));
 
