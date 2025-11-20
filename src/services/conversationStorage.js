@@ -211,6 +211,74 @@ class ConversationStorage {
     }
 
     /**
+     * Store approvers list
+     * @param {array} approvers - Array of approver objects with {title, value}
+     */
+    async setApproversList(approvers) {
+        try {
+            // Store in memory cache
+            this.memoryCache.set('approvers:list', approvers);
+
+            // Store in Redis if connected
+            if (this.isConnected && this.client) {
+                const key = 'approvers:list';
+                const value = JSON.stringify(approvers);
+
+                // Store with 30-day expiration (in seconds)
+                const expirationSeconds = 30 * 24 * 60 * 60; // 30 days
+
+                await this.client.setEx(key, expirationSeconds, value);
+
+                console.log('[ConversationStorage] Stored approvers list in Redis -', approvers.length, 'approvers');
+            } else {
+                console.log('[ConversationStorage] Stored approvers list in memory -', approvers.length, 'approvers');
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[ConversationStorage] Error storing approvers list:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Get approvers list
+     * @returns {array|null} Array of approvers or null if not found
+     */
+    async getApproversList() {
+        try {
+            // Try memory cache first (fastest)
+            const cached = this.memoryCache.get('approvers:list');
+            if (cached) {
+                console.log('[ConversationStorage] Retrieved approvers list from memory -', cached.length, 'approvers');
+                return cached;
+            }
+
+            // Try Redis if connected
+            if (this.isConnected && this.client) {
+                const key = 'approvers:list';
+                const value = await this.client.get(key);
+
+                if (value) {
+                    const approvers = JSON.parse(value);
+
+                    // Store in memory cache for future fast access
+                    this.memoryCache.set('approvers:list', approvers);
+
+                    console.log('[ConversationStorage] Retrieved approvers list from Redis -', approvers.length, 'approvers');
+                    return approvers;
+                }
+            }
+
+            console.log('[ConversationStorage] No approvers list found');
+            return null;
+        } catch (error) {
+            console.error('[ConversationStorage] Error retrieving approvers list:', error);
+            return null;
+        }
+    }
+
+    /**
      * Get storage statistics
      * @returns {object} Storage statistics
      */

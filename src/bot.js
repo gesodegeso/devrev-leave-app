@@ -151,25 +151,25 @@ class TeamsLeaveBot extends ActivityHandler {
         try {
             const conversationType = context.activity.conversation.conversationType;
 
-            // For personal (1-on-1) chats, use Microsoft Graph API to get organization users
+            // For personal (1-on-1) chats, use stored approvers list from Redis
             if (conversationType === 'personal') {
-                console.log('Personal chat detected - using Graph API to retrieve organization users');
+                console.log('[getTeamMembersForSelection] Personal chat detected - retrieving stored approvers list');
 
-                // Use Graph API to get organization users
-                // Only get active users, limit to 100 most common approvers
-                const users = await this.graphService.getOrganizationUsers(
-                    100,
-                    'accountEnabled eq true'
-                );
+                // Try to get stored approvers list from Redis
+                const storedApprovers = await this.conversationStorage.getApproversList();
 
-                if (users.length === 0) {
-                    console.warn('Graph API returned no users - check permissions');
+                if (storedApprovers && storedApprovers.length > 0) {
+                    console.log('[getTeamMembersForSelection] Using stored approvers list -', storedApprovers.length, 'approvers');
+                    return storedApprovers;
+                } else {
+                    console.warn('[getTeamMembersForSelection] No stored approvers list found');
+                    console.warn('[getTeamMembersForSelection] Please use the bot in a Teams channel first to populate the approvers list');
+                    return [];
                 }
-
-                return users;
             }
 
             // For team/group chats, get members from the conversation
+            console.log('[getTeamMembersForSelection] Team/group chat detected - retrieving members from conversation');
             const members = await TeamsInfo.getMembers(context);
 
             // Filter out the bot itself and current user
@@ -183,7 +183,7 @@ class TeamsLeaveBot extends ActivityHandler {
             );
 
             // Format for ChoiceSet
-            return filteredMembers.map(member => ({
+            const approversList = filteredMembers.map(member => ({
                 title: member.name,
                 value: JSON.stringify({
                     id: member.id,
@@ -192,8 +192,16 @@ class TeamsLeaveBot extends ActivityHandler {
                 })
             }));
 
+            // Store this list in Redis for future use in personal chats
+            if (approversList.length > 0) {
+                console.log('[getTeamMembersForSelection] Storing approvers list for future use -', approversList.length, 'approvers');
+                await this.conversationStorage.setApproversList(approversList);
+            }
+
+            return approversList;
+
         } catch (error) {
-            console.error('Error getting team members:', error);
+            console.error('[getTeamMembersForSelection] Error getting team members:', error);
             // Return empty array if we can't get members
             return [];
         }
