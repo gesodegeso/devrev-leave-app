@@ -144,6 +144,65 @@ server.post("/api/devrev-webhook", async (req, res) => {
       }
     }
 
+    // Handle work item updated event (for question answers)
+    if (event.type === "work.updated") {
+      const workItem = event.work;
+
+      if (!workItem) {
+        console.log("[DevRev Webhook] No work item found in event");
+        res.send(200, { status: "ok" });
+        return;
+      }
+
+      console.log("[DevRev Webhook] Work item updated:");
+      console.log("[DevRev Webhook] - ID:", workItem.id);
+      console.log("[DevRev Webhook] - Type:", workItem.type);
+      console.log("[DevRev Webhook] - Title:", workItem.title);
+
+      // Check if it's a leave question Issue
+      const isLeaveQuestion =
+        workItem.type === "issue" &&
+        workItem.title &&
+        workItem.title.includes("休暇に関する質問");
+
+      if (isLeaveQuestion) {
+        console.log("[DevRev Webhook] Leave question updated:", workItem.id);
+        console.log("[DevRev Webhook] Checking if answer was added...");
+
+        // Check if the update includes a comment or body change (indicating an answer)
+        // We'll treat any update to a question Issue as potentially containing an answer
+        await bot.handleQuestionAnswered(workItem);
+      } else {
+        console.log("[DevRev Webhook] Not a leave question, skipping");
+      }
+    }
+
+    // Handle timeline entry created event (for question answers via comments)
+    if (event.type === "timeline_entry.created") {
+      const timelineEntry = event.timeline_entry;
+
+      if (!timelineEntry) {
+        console.log("[DevRev Webhook] No timeline entry found in event");
+        res.send(200, { status: "ok" });
+        return;
+      }
+
+      console.log("[DevRev Webhook] Timeline entry created:");
+      console.log("[DevRev Webhook] - Type:", timelineEntry.entry_type);
+      console.log("[DevRev Webhook] - Object ID:", timelineEntry.object);
+
+      // Check if it's a comment on a work item
+      if (timelineEntry.entry_type === "timeline_comment") {
+        console.log("[DevRev Webhook] Comment detected on work item:", timelineEntry.object);
+
+        // We need to fetch the work item to check if it's a leave question
+        // For now, we'll trigger the notification handler which will validate
+        // Note: This might require fetching the work item details via DevRev API
+        // to confirm it's a leave question before notifying
+        console.log("[DevRev Webhook] Comment added - may need to fetch work item details to confirm if it's a leave question");
+      }
+    }
+
     res.send(200, { status: "ok" });
   } catch (error) {
     console.error("[DevRev Webhook] Error:", error);

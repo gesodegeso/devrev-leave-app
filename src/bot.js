@@ -3,6 +3,7 @@ const { DevRevService } = require('./services/devrev');
 const { GraphService } = require('./services/graphService');
 const { ConversationStorage } = require('./services/conversationStorage');
 const leaveRequestCard = require('./cards/leaveRequestCard.json');
+const leaveQuestionCard = require('./cards/leaveQuestionCard.json');
 
 class TeamsLeaveBot extends ActivityHandler {
     constructor(adapter) {
@@ -30,16 +31,20 @@ class TeamsLeaveBot extends ActivityHandler {
             // Handle different commands
             if (text === '休暇申請' || text.toLowerCase() === 'leave request') {
                 await this.handleLeaveRequest(context);
+            } else if (text === '休暇の質問' || text.toLowerCase() === 'leave question') {
+                await this.handleLeaveQuestion(context);
             } else if (context.activity.value) {
-                // Handle adaptive card submission (leave request or approval action)
+                // Handle adaptive card submission
                 if (context.activity.value.action === 'approve' || context.activity.value.action === 'reject') {
                     await this.handleApprovalAction(context);
+                } else if (context.activity.value.action === 'submit_question') {
+                    await this.handleQuestionSubmit(context);
                 } else {
                     await this.handleCardSubmit(context);
                 }
             } else {
                 // Unknown command
-                await context.sendActivity('コマンドを認識できませんでした。「休暇申請」とメンションしてください。');
+                await context.sendActivity('コマンドを認識できませんでした。\n\n利用可能なコマンド:\n- 「休暇申請」: 休暇申請フォームを表示\n- 「休暇の質問」: 休暇に関する質問を送信');
             }
 
             await next();
@@ -145,6 +150,23 @@ class TeamsLeaveBot extends ActivityHandler {
     }
 
     /**
+     * Handle leave question command
+     */
+    async handleLeaveQuestion(context) {
+        try {
+            console.log('[handleLeaveQuestion] Displaying question form');
+
+            await context.sendActivity({
+                attachments: [CardFactory.adaptiveCard(leaveQuestionCard)]
+            });
+
+        } catch (error) {
+            console.error('[handleLeaveQuestion] Error:', error);
+            await context.sendActivity('エラーが発生しました。もう一度お試しください。');
+        }
+    }
+
+    /**
      * Get team members for approver selection
      */
     async getTeamMembersForSelection(context) {
@@ -234,6 +256,67 @@ class TeamsLeaveBot extends ActivityHandler {
         }
 
         return card;
+    }
+
+    /**
+     * Handle question answered from DevRev webhook
+     */
+    async handleQuestionAnswered(workItem) {
+        try {
+            console.log('[handleQuestionAnswered] Processing:', workItem.id);
+
+            // Extract questioner Teams ID from body
+            const body = workItem.body || '';
+            const teamsIdMatch = body.match(/Teams User ID[:\s]*([^\n]+)/);
+
+            if (!teamsIdMatch) {
+                console.error('[handleQuestionAnswered] No Teams User ID found in issue body');
+                console.error('[handleQuestionAnswered] Body:', body);
+                return;
+            }
+
+            const questionerTeamsId = teamsIdMatch[1].trim();
+            console.log('[handleQuestionAnswered] Questioner Teams ID:', questionerTeamsId);
+
+            // Get conversation reference
+            const conversationReference = await this.conversationStorage.getConversationReference(questionerTeamsId);
+
+            if (!conversationReference) {
+                console.error('[handleQuestionAnswered] No conversation reference found for questioner:', questionerTeamsId);
+                const userIds = await this.conversationStorage.getAllUserIds();
+                console.error('[handleQuestionAnswered] Available user IDs:', userIds);
+                return;
+            }
+
+            console.log('[handleQuestionAnswered] Found conversation reference for questioner');
+
+            // Extract question title and answer from latest comment or body
+            const title = workItem.title || '質問';
+            const displayId = workItem.display_id || workItem.id;
+
+            // Create answer notification message
+            const answerMessage = `📬 質問への回答が届きました！\n\n` +
+                `**質問:** ${title.replace('休暇に関する質問: ', '')}\n` +
+                `**Issue ID:** ${displayId}\n\n` +
+                `DevRevで回答を確認してください: https://app.devrev.ai/work/${displayId}`;
+
+            // Send notification to questioner
+            await this.adapter.continueConversationAsync(
+                process.env.MICROSOFT_APP_ID,
+                conversationReference,
+                async (turnContext) => {
+                    await turnContext.sendActivity(answerMessage);
+                    console.log('[handleQuestionAnswered] Answer notification sent to:', questionerTeamsId);
+                }
+            );
+
+            console.log('[handleQuestionAnswered] Answer notification sent successfully');
+
+        } catch (error) {
+            console.error('[handleQuestionAnswered] Error:', error);
+            console.error('[handleQuestionAnswered] Error stack:', error.stack);
+            throw error;
+        }
     }
 
     /**
@@ -501,6 +584,61 @@ class TeamsLeaveBot extends ActivityHandler {
 
         } catch (error) {
             console.error('[notifyRequester] Error:', error);
+        }
+    }
+
+    /**
+     * Handle question submission
+     */
+    async handleQuestionSubmit(context) {
+        try {
+            console.log('[handleQuestionSubmit] Handling question submission');
+            const submittedData = context.activity.value;
+
+            console.log('[handleQuestionSubmit] Submitted data:', JSON.stringify(submittedData, null, 2));
+
+            // Validate question
+            if (!submittedData.question || submittedData.question.trim() === '') {
+                await context.sendActivity('質問内容を入力してください。');
+                return;
+            }
+
+            // Send confirmation
+            await context.sendActivity('質問を受け付けました。DevRevにIssueを作成しています...');
+
+            // Create DevRev issue
+            const questionData = {
+                question: submittedData.question,
+                category: submittedData.category || 'other'
+            };
+
+            const issueResult = await this.devRevService.createLeaveQuestion(
+                questionData,
+                context.activity.from
+            );
+
+            if (issueResult.success) {
+                let confirmationMessage = `✅ 質問を送信しました！\n\n`;
+                confirmationMessage += `**質問内容:** ${submittedData.question}\n\n`;
+
+                if (issueResult.displayId) {
+                    confirmationMessage += `**Issue ID:** ${issueResult.displayId}\n`;
+                }
+
+                if (issueResult.issueUrl) {
+                    confirmationMessage += `**確認リンク:** ${issueResult.issueUrl}\n\n`;
+                }
+
+                confirmationMessage += `回答が届き次第、Teamsで通知します。`;
+
+                await context.sendActivity(confirmationMessage);
+            } else {
+                await context.sendActivity(`❌ エラーが発生しました: ${issueResult.error}`);
+            }
+
+        } catch (error) {
+            console.error('[handleQuestionSubmit] Error:', error);
+            await context.sendActivity('送信中にエラーが発生しました。もう一度お試しください。');
         }
     }
 

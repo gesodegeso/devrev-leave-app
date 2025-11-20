@@ -1,0 +1,73 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.4",
+    "body": [
+        {
+            "type": "TextBlock",
+            "text": "❓ 休暇に関する質問",
+            "weight": "Bolder",
+            "size": "Large",
+            "color": "Accent"
+        },
+        {
+            "type": "TextBlock",
+            "text": "休暇制度や申請方法について質問がある場合、こちらのフォームをご利用ください。",
+            "wrap": true,
+            "spacing": "Small"
+        },
+        {
+            "type": "TextBlock",
+            "text": "質問内容",
+            "weight": "Bolder",
+            "spacing": "Medium"
+        },
+        {
+            "type": "Input.Text",
+            "id": "question",
+            "placeholder": "例: 有給休暇の残日数を確認する方法を教えてください",
+            "isMultiline": true,
+            "maxLength": 1000
+        },
+        {
+            "type": "TextBlock",
+            "text": "カテゴリ（任意）",
+            "weight": "Bolder",
+            "spacing": "Medium"
+        },
+        {
+            "type": "Input.ChoiceSet",
+            "id": "category",
+            "style": "compact",
+            "placeholder": "カテゴリを選択",
+            "choices": [
+                {
+                    "title": "有給休暇",
+                    "value": "paid_leave"
+                },
+                {
+                    "title": "特別休暇",
+                    "value": "special_leave"
+                },
+                {
+                    "title": "申請方法",
+                    "value": "application_method"
+                },
+                {
+                    "title": "その他",
+                    "value": "other"
+                }
+            ],
+            "value": "other"
+        }
+    ],
+    "actions": [
+        {
+            "type": "Action.Submit",
+            "title": "質問を送信",
+            "data": {
+                "action": "submit_question"
+            }
+        }
+    ]
+}

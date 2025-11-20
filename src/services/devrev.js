@@ -373,6 +373,118 @@ class DevRevService {
     }
 
     /**
+     * Create leave question issue
+     */
+    async createLeaveQuestion(questionData, requester) {
+        try {
+            console.log('[DevRev] Creating leave question issue');
+
+            const { question, category } = questionData;
+
+            // Build issue body
+            const body = this.buildQuestionBody(question, category, requester);
+
+            // Create issue
+            const issueData = {
+                type: 'issue',
+                title: `休暇に関する質問: ${this.truncateText(question, 60)}`,
+                body: body,
+                applies_to_part: this.defaultPartId,
+                owned_by: [this.defaultPartId]
+            };
+
+            console.log('[DevRev] Creating issue:', JSON.stringify(issueData, null, 2));
+
+            // Make API call to DevRev (works.create endpoint)
+            const response = await axios.post(
+                `${this.apiBaseUrl}/works.create`,
+                issueData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log('[DevRev] API response:', JSON.stringify(response.data, null, 2));
+
+            // Extract work item from response
+            if (response.data && response.data.work) {
+                const work = response.data.work;
+                return {
+                    success: true,
+                    issueId: work.id,
+                    displayId: work.display_id,
+                    issueUrl: work.display_id ? `https://app.devrev.ai/work/${work.display_id}` : null
+                };
+            } else {
+                throw new Error('Unexpected response format from DevRev API');
+            }
+
+        } catch (error) {
+            console.error('[DevRev] Error creating issue:', error);
+
+            let errorMessage = 'Unknown error';
+            if (error.response) {
+                console.error('[DevRev] API error response:', error.response.data);
+                errorMessage = error.response.data.message || JSON.stringify(error.response.data);
+            } else if (error.request) {
+                errorMessage = 'No response from DevRev API';
+            } else {
+                errorMessage = error.message;
+            }
+
+            return {
+                success: false,
+                error: errorMessage
+            };
+        }
+    }
+
+    /**
+     * Build question body
+     */
+    buildQuestionBody(question, category, requester) {
+        const categoryLabels = {
+            'paid_leave': '有給休暇',
+            'special_leave': '特別休暇',
+            'application_method': '申請方法',
+            'other': 'その他'
+        };
+
+        let body = `# 休暇に関する質問\n\n`;
+
+        body += `## 質問者情報\n`;
+        body += `- **名前**: ${requester.name}\n`;
+        body += `- **Teams User ID**: ${requester.id}\n`;
+        if (requester.aadObjectId) {
+            body += `- **AAD Object ID**: ${requester.aadObjectId}\n`;
+        }
+        body += `\n`;
+
+        body += `## カテゴリ\n`;
+        body += `${categoryLabels[category] || 'その他'}\n\n`;
+
+        body += `## 質問内容\n`;
+        body += `${question}\n\n`;
+
+        body += `---\n`;
+        body += `*この質問はMicrosoft Teamsの休暇申請Botから自動的に作成されました。*\n`;
+
+        return body;
+    }
+
+    /**
+     * Truncate text to specified length
+     */
+    truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 3) + '...';
+    }
+
+    /**
      * Build ticket description from leave request data
      */
     buildTicketDescription(data) {
